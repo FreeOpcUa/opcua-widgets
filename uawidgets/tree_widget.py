@@ -31,6 +31,9 @@ class TreeWidget(QObject):
 
     def _get_root_desc(self, uaclient):
         node = uaclient.get_root_node()
+        return self._get_node_desc(node, uaclient)
+
+    def _get_node_desc(self, node, uaclient):
         attrs = node.get_attributes([ua.AttributeIds.DisplayName, ua.AttributeIds.BrowseName, ua.AttributeIds.NodeId, ua.AttributeIds.NodeClass])
         desc = ua.ReferenceDescription()
         desc.DisplayName = attrs[0].Value.Value
@@ -65,6 +68,19 @@ class TreeWidget(QObject):
             it = it.parent()
         return path
 
+    def reload_current(self):
+        idx = self.view.currentIndex()
+        idx = idx.sibling(idx.row(), 0)
+        it = self.model.itemFromIndex(idx)
+        if not it:
+            return None
+        for i in range(it.rowCount()):
+            it.takeRow(0)
+        node = it.data()
+        if node:
+            self.model.reload(node)
+
+
     def get_current_node(self, idx=None):
         if idx is None:
             idx = self.view.currentIndex()
@@ -77,6 +93,11 @@ class TreeWidget(QObject):
             print("No node for item:", it, it.text())
             return None
         return node
+
+    def add_node_to_current(self, node):
+        idx = self.view.currentIndex()
+        it = self.model.itemFromIndex(idx)
+        self.model.add_item
 
 
 class TreeViewModel(QStandardItemModel):
@@ -112,12 +133,18 @@ class TreeViewModel(QStandardItemModel):
             item[0].setIcon(QIcon(":/method.svg"))
         elif desc.NodeClass == ua.NodeClass.ObjectType:
             item[0].setIcon(QIcon(":/object_type.svg"))
+        elif desc.NodeClass == ua.NodeClass.VariableType:
+            item[0].setIcon(QIcon(":/variable_type.svg"))
 
         item[0].setData(self.uaclient.get_node(desc.NodeId))
         if parent:
             return parent.appendRow(item)
         else:
             return self.appendRow(item)
+
+    def reload(self, node):
+        if node in self._fetched:
+            self._fetched.remove(node)
 
     def canFetchMore(self, idx):
         item = self.itemFromIndex(idx)
