@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QTreeView, QDialog, QVBoxLayout, QDialogButtonBox
+from PyQt5.QtWidgets import QTreeView, QDialog, QVBoxLayout, QDialogButtonBox, QAbstractItemView
 from PyQt5.QtCore import Qt
 
 from uawidgets.tree_widget import TreeWidget
@@ -11,6 +11,7 @@ class GetNodeDialog(QDialog):
         layout = QVBoxLayout(self)
         
         self.treeview = QTreeView(self)
+        self.treeview.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.tree = TreeWidget(self.treeview)
         self.tree.set_root_node(startnode)
         layout.addWidget(self.treeview)
@@ -22,6 +23,7 @@ class GetNodeDialog(QDialog):
 
         self.buttons.accepted.connect(self.accept)
         self.buttons.rejected.connect(self.reject)
+        self.treeview.activated.connect(self.accept)
 
     def get_node(self):
         return self.tree.get_current_node()
