@@ -3,6 +3,7 @@ from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon
 from PyQt5.QtWidgets import QApplication, QAbstractItemView
 
 from opcua import ua
+from opcua import Node
 
 
 class TreeWidget(QObject):
@@ -24,24 +25,9 @@ class TreeWidget(QObject):
     def clear(self):
         self.model.clear()
 
-    def start(self, uaclient):
+    def set_root_node(self, node):
         self.model.clear()
-        self.model.set_uaclient(uaclient)
-        self.model.add_item(self._get_root_desc(uaclient))
-
-    def _get_root_desc(self, uaclient):
-        node = uaclient.get_root_node()
-        return self._get_node_desc(node, uaclient)
-
-    def _get_node_desc(self, node, uaclient):
-        attrs = node.get_attributes([ua.AttributeIds.DisplayName, ua.AttributeIds.BrowseName, ua.AttributeIds.NodeId, ua.AttributeIds.NodeClass])
-        desc = ua.ReferenceDescription()
-        desc.DisplayName = attrs[0].Value.Value
-        desc.BrowseName = attrs[1].Value.Value
-        desc.NodeId = attrs[2].Value.Value
-        desc.NodeClass = attrs[3].Value.Value
-        desc.TypeDefinition = ua.TwoByteNodeId(ua.ObjectIds.FolderType)
-        return desc
+        self.model.set_root_node(node)
 
     def copy_path(self):
         path = self.get_current_path()
@@ -106,18 +92,28 @@ class TreeViewModel(QStandardItemModel):
 
     def __init__(self):
         super(TreeViewModel, self).__init__()
-        self.uaclient = None
         self._fetched = []
-
-    def set_uaclient(self, uaclient):
-        self.uaclient = uaclient
 
     def clear(self):
         QStandardItemModel.clear(self)
         self._fetched = []
         self.setHorizontalHeaderLabels(['DisplayName', "BrowseName", 'NodeId'])
 
-    def add_item(self, desc, parent=None):
+    def set_root_node(self, node):
+        desc = self._get_node_desc(node)
+        self.add_item(desc, node=node)
+
+    def _get_node_desc(self, node):
+        attrs = node.get_attributes([ua.AttributeIds.DisplayName, ua.AttributeIds.BrowseName, ua.AttributeIds.NodeId, ua.AttributeIds.NodeClass])
+        desc = ua.ReferenceDescription()
+        desc.DisplayName = attrs[0].Value.Value
+        desc.BrowseName = attrs[1].Value.Value
+        desc.NodeId = attrs[2].Value.Value
+        desc.NodeClass = attrs[3].Value.Value
+        desc.TypeDefinition = ua.TwoByteNodeId(ua.ObjectIds.FolderType)
+        return desc
+
+    def add_item(self, desc, parent=None, node=None):
         item = [QStandardItem(desc.DisplayName.to_string()), QStandardItem(desc.BrowseName.to_string()), QStandardItem(desc.NodeId.to_string())]
         if desc.NodeClass == ua.NodeClass.Object:
             if desc.TypeDefinition == ua.TwoByteNodeId(ua.ObjectIds.FolderType):
@@ -135,8 +131,11 @@ class TreeViewModel(QStandardItemModel):
             item[0].setIcon(QIcon(":/object_type.svg"))
         elif desc.NodeClass == ua.NodeClass.VariableType:
             item[0].setIcon(QIcon(":/variable_type.svg"))
-
-        item[0].setData(self.uaclient.get_node(desc.NodeId))
+        if node:
+            item[0].setData(node)
+        else:
+            parent_node = parent.data()
+            item[0].setData(Node(parent_node.server, desc.NodeId))
         if parent:
             return parent.appendRow(item)
         else:
