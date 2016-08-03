@@ -1,7 +1,27 @@
-from PyQt5.QtWidgets import QTreeView, QDialog, QVBoxLayout, QDialogButtonBox, QAbstractItemView
+from PyQt5.QtWidgets import QTreeView, QDialog, QVBoxLayout, QDialogButtonBox, QAbstractItemView, QPushButton
 from PyQt5.QtCore import Qt
 
+from opcua import Node
+
 from uawidgets.tree_widget import TreeWidget
+
+
+class GetNodeButton(QPushButton):
+    def __init__(self, parent, currentnode, startnode):
+        text = currentnode.get_browse_name().to_string()
+        QPushButton.__init__(self, text, parent)
+        self.current_node = currentnode
+        self.start_node = startnode
+        self.clicked.connect(self.get_new_node)
+
+    def get_new_node(self):
+        node, ok = GetNodeDialog.getNode(self, self.start_node)
+        if ok:
+            self.current_node = node
+            self.setText(self.current_node.get_browse_name().to_string())
+
+    def get_node(self):
+        return self.current_node
 
 
 class GetNodeDialog(QDialog):
