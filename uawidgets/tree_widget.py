@@ -36,10 +36,7 @@ class TreeWidget(QObject):
 
     def copy_nodeid(self):
         node = self.get_current_node()
-        if node:
-            text = node.nodeid.to_string()
-        else:
-            text = ""
+        text = node.nodeid.to_string()
         QApplication.clipboard().setText(text)
 
     def get_current_path(self):
@@ -73,11 +70,12 @@ class TreeWidget(QObject):
         idx = idx.sibling(idx.row(), 0)
         it = self.model.itemFromIndex(idx)
         if not it:
-            return None
+            self.error.emit("No node selected")
+            raise RuntimeError("No Node Selected")
         node = it.data()
         if not node:
-            print("No node for item:", it, it.text())
-            return None
+            self.error.emit("Item does not contain node data, report!")
+            raise RuntimeError("Item does not contain node data, report!")
         return node
 
     def add_node_to_current(self, node):
@@ -131,6 +129,10 @@ class TreeViewModel(QStandardItemModel):
             item[0].setIcon(QIcon(":/object_type.svg"))
         elif desc.NodeClass == ua.NodeClass.VariableType:
             item[0].setIcon(QIcon(":/variable_type.svg"))
+        elif desc.NodeClass == ua.NodeClass.DataType:
+            item[0].setIcon(QIcon(":/data_type.svg"))
+        elif desc.NodeClass == ua.NodeClass.ReferenceType:
+            item[0].setIcon(QIcon(":/reference_type.svg"))
         if node:
             item[0].setData(node)
         else:

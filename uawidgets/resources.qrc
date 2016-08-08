@@ -11,5 +11,7 @@
     <file>variable.svg</file>
     <file>variable_type.svg</file>
     <file>method.svg</file>
+    <file>reference_type.svg</file>
+    <file>data_type.svg</file>
 </qresource>
 </RCC>
