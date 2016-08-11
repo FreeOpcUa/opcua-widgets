@@ -111,7 +111,7 @@ class AttrsWidget(QObject):
         for idx, dv in enumerate(dvs):
             if dv.StatusCode.is_good():
                 res.append((attrs[idx], dv))
-        res.sort()
+        res.sort(key=lambda x: x[0].name)
         return res
 
 

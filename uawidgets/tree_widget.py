@@ -174,6 +174,7 @@ class TreeViewModel(QStandardItemModel):
     def _fetchMore(self, parent):
         try:
             descs = parent.data().get_children_descriptions()
+            descs.sort(key=lambda x: x.BrowseName)
             for desc in descs:
                 self.add_item(desc, parent)
         except Exception as ex:
