@@ -40,6 +40,7 @@ class GetNodeDialog(QDialog):
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
             Qt.Horizontal, self)
         layout.addWidget(self.buttons)
+        self.resize(800, 600)
 
         self.buttons.accepted.connect(self.accept)
         self.buttons.rejected.connect(self.reject)
