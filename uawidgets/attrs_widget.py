@@ -1,16 +1,48 @@
 from PyQt5.QtCore import pyqtSignal, Qt, QObject
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
-from PyQt5.QtWidgets import QApplication, QMenu, QAction, QStyledItemDelegate, QComboBox
+from PyQt5.QtWidgets import QApplication, QMenu, QAction, QStyledItemDelegate, QComboBox, QWidget, QVBoxLayout, QCheckBox, QDialog
 
 from opcua import ua
 from opcua import Node
 from opcua.common.ua_utils import string_to_variant, variant_to_string, val_to_string
+
 from uawidgets.get_node_dialog import GetNodeButton
+
+
+class BitEditor(QDialog):
+    """
+    Edit bits in data
+    FIXME: this should be a dialog but a Widget appearing directly in treewidget
+    Patch welcome
+    """
+
+    def __init__(self, parent, attr, val):
+        QDialog.__init__(self, parent)
+        layout = QVBoxLayout(self)
+        self.setLayout(layout)
+        self.boxes = []
+        self.enum = attr_to_enum(attr)
+        for el in self.enum:
+            box = QCheckBox(el.name, parent)
+            layout.addWidget(box)
+            self.boxes.append(box)
+            if ua.test_bit(val, el.value):
+                box.setChecked(True)
+            else:
+                box.setChecked(False)
+
+    def get_byte(self):
+        data = 0
+        for box in self.boxes:
+            if box.isChecked():
+                data = ua.set_bit(data, self.enum[box.text()].value)
+        return data
 
 
 class AttrsWidget(QObject):
 
     error = pyqtSignal(str)
+    modified = pyqtSignal()
 
     def __init__(self, view):
         QObject.__init__(self, view)
@@ -39,9 +71,7 @@ class AttrsWidget(QObject):
         except Exception as ex:
             self.error.emit(ex)
             raise
-        finally:
-            #self.reload()
-            pass
+        self.modified.emit()
 
     def showContextMenu(self, position):
         item = self.get_current_item()
@@ -81,11 +111,7 @@ class AttrsWidget(QObject):
                           ua.AttributeIds.WriteMask,
                           ua.AttributeIds.UserWriteMask,
                           ua.AttributeIds.EventNotifier):
-                attr_name = attr.name
-                if attr_name.startswith("User"):
-                    attr_name = attr_name[4:]
-                attr_enum = getattr(ua, attr_name)
-                string = ", ".join([e.name for e in attr_enum.parse_bitfield(dv.Value.Value)])
+                string = enum_to_string(attr, dv)
             else:
                 string = variant_to_string(dv.Value)
             name_item = QStandardItem(attr.name)
@@ -151,8 +177,7 @@ class MyDelegate(QStyledItemDelegate):
                       ua.AttributeIds.WriteMask,
                       ua.AttributeIds.UserWriteMask,
                       ua.AttributeIds.EventNotifier):
-            #FIXME: make a ByteEditor we can choose and click bit ala QtCreator
-            raise NotImplementedError
+            return BitEditor(parent, attr, dv.Value.Value)
         else:
             return QStyledItemDelegate.createEditor(self, parent, option, idx)
 
@@ -173,13 +198,8 @@ class MyDelegate(QStyledItemDelegate):
                       ua.AttributeIds.WriteMask,
                       ua.AttributeIds.UserWriteMask,
                       ua.AttributeIds.EventNotifier):
-            #attr_name = attr.name
-            #if attr_name.startswith("User"):
-                #attr_name = attr_name[4:]
-            #attr_enum = getattr(ua, attr_name)
-            #string = ", ".join([e.name for e in attr_enum.parse_bitfield(dv.Value.Value)])
-            raise NotImplementedError
-
+            dv.Value.Value = editor.get_byte()
+            text = enum_to_string(attr, dv)
         else:
             if isinstance(editor, QComboBox):
                 text = editor.currentText()
@@ -197,4 +217,17 @@ def data_type_to_string(dv):
         string = ua.ObjectIdNames[dv.Value.Value.Identifier]
     else:
         string = dv.Value.Value.to_string()
+    return string
+
+
+def attr_to_enum(attr):
+    attr_name = attr.name
+    if attr_name.startswith("User"):
+        attr_name = attr_name[4:]
+    return getattr(ua, attr_name)
+
+
+def enum_to_string(attr, dv):
+    attr_enum = attr_to_enum(attr)
+    string = ", ".join([e.name for e in attr_enum.parse_bitfield(dv.Value.Value)])
     return string

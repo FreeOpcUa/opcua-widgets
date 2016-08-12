@@ -57,7 +57,7 @@ class TreeWidget(QObject):
         it = self.model.itemFromIndex(idx)
         if not it:
             return None
-        for i in range(it.rowCount()):
+        for _ in range(it.rowCount()):
             it.takeRow(0)
         node = it.data()
         if node:
@@ -77,11 +77,6 @@ class TreeWidget(QObject):
             self.error.emit("Item does not contain node data, report!")
             raise RuntimeError("Item does not contain node data, report!")
         return node
-
-    def add_node_to_current(self, node):
-        idx = self.view.currentIndex()
-        it = self.model.itemFromIndex(idx)
-        self.model.add_item
 
 
 class TreeViewModel(QStandardItemModel):
@@ -180,23 +175,6 @@ class TreeViewModel(QStandardItemModel):
         except Exception as ex:
             self.error.emit(ex)
             raise
-
-    #def flags(self, idx):
-        #item = self.itemFromIndex(idx)
-        #flags = QStandardItemModel.flags(self, idx)
-        #if not item:
-            #return flags
-        #node = item.data()
-        #if node and node.get_node_class() == ua.NodeClass.Variable:
-            ## FIXME not efficient to query, should be stored in data()
-            ##print(1, flags)
-            #return flags | Qt.ItemIsDropEnabled
-        #else:
-            #print(2, flags)
-            #return flags
-
-    #def mimeTypes(self):
-        #return ["application/vnd.text.list"]
 
     def mimeData(self, idxs):
         mdata = QMimeData()
