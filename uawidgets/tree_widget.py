@@ -63,7 +63,6 @@ class TreeWidget(QObject):
         if node:
             self.model.reload(node)
 
-
     def get_current_node(self, idx=None):
         if idx is None:
             idx = self.view.currentIndex()

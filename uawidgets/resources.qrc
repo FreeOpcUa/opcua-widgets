@@ -1,5 +1,7 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
+    <file>copy.svg</file>
+    <file>paste.svg</file>
     <file>new.svg</file>
     <file>open.svg</file>
     <file>save.svg</file>
