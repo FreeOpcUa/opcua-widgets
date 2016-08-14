@@ -76,7 +76,7 @@ class AttrsWidget(QObject):
     def showContextMenu(self, position):
         item = self.get_current_item()
         if item:
-            self._contextMenu.exec_(self.view.mapToGlobal(position))
+            self._contextMenu.exec_(self.view.viewport().mapToGlobal(position))
 
     def get_current_item(self, col_idx=0):
         idx = self.view.currentIndex()
