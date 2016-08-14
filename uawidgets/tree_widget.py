@@ -58,6 +58,10 @@ class TreeWidget(QObject):
         if not it:
             return None
         for _ in range(it.rowCount()):
+            child_it = it.child(0, 0)
+            node = child_it.data()
+            if node:
+                self.model.reload(node)
             it.takeRow(0)
         node = it.data()
         if node:
