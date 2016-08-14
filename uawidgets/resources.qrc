@@ -2,6 +2,7 @@
 <qresource>
     <file>copy.svg</file>
     <file>paste.svg</file>
+    <file>delete.svg</file>
     <file>new.svg</file>
     <file>open.svg</file>
     <file>save.svg</file>
