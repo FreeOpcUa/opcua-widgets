@@ -57,15 +57,22 @@ class TreeWidget(QObject):
         it = self.model.itemFromIndex(idx)
         if not it:
             return None
-        for _ in range(it.rowCount()):
-            child_it = it.child(0, 0)
+        self.reload(it)
+
+    def reload(self, item=None):
+        if item is None:
+            item = self.mode.item(0, 0)
+        for _ in range(item.rowCount()):
+            child_it = item.child(0, 0)
             node = child_it.data()
             if node:
                 self.model.reload(node)
-            it.takeRow(0)
-        node = it.data()
+            item.takeRow(0)
+        node = item.data()
         if node:
             self.model.reload(node)
+
+
 
     def remove_current_item(self):
         idx = self.view.currentIndex()
