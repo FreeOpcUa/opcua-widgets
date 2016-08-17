@@ -121,7 +121,6 @@ class TreeViewModel(QStandardItemModel):
         return desc
 
     def add_item(self, desc, parent=None, node=None):
-        print("CREATE ITEM", desc.DisplayName.to_string(), desc.BrowseName.to_string(), desc.NodeId.to_string())
         item = [QStandardItem(desc.DisplayName.to_string()), QStandardItem(desc.BrowseName.to_string()), QStandardItem(desc.NodeId.to_string())]
         if desc.NodeClass == ua.NodeClass.Object:
             if desc.TypeDefinition == ua.TwoByteNodeId(ua.ObjectIds.FolderType):
