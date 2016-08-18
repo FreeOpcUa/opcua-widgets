@@ -10,6 +10,7 @@ class NewNodeBaseDialog(QDialog):
     def __init__(self, parent, title, server):
         QDialog.__init__(self, parent)
         self.setWindowTitle(title)
+        self.settings = QSettings()
 
         self.vlayout = QVBoxLayout(self)
         self.layout = QHBoxLayout()
@@ -21,7 +22,10 @@ class NewNodeBaseDialog(QDialog):
         uries = server.get_namespace_array()
         for uri in uries:
             self.nsComboBox.addItem(uri)
-        self.nsComboBox.setCurrentIndex(len(uries)-1)
+        nsidx = int(self.settings.value("last_namespace", len(uries)-1))
+        if nsidx > len(uries)-1:
+            nsidx = len(uries)-1
+        self.nsComboBox.setCurrentIndex(nsidx)
         self.layout.addWidget(self.nsComboBox)
 
         self.layout.addWidget(QLabel("Name:", self))
@@ -34,16 +38,20 @@ class NewNodeBaseDialog(QDialog):
         self.nodeidCheckBox.stateChanged.connect(self._show_nodeid)
         self.layout.addWidget(self.nodeidCheckBox)
         self.nodeidLineEdit = QLineEdit(self)
-        self.nodeidLineEdit.setText("ns=3;i=20000")
+        self.nodeidLineEdit.setText("ns={};i=20000".format(nsidx))
         self.layout.addWidget(self.nodeidLineEdit)
         self.nodeidLineEdit.hide()
-
 
         self.buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, Qt.Horizontal, self)
         self.vlayout.addWidget(self.buttons)
 
         self.buttons.accepted.connect(self.accept)
+        self.buttons.accepted.connect(self._store_state)
         self.buttons.rejected.connect(self.reject)
+
+    def _store_state(self):
+        print("STORE")
+        self.settings.setValue("last_namespace", self.nsComboBox.currentIndex())
 
     def _show_nodeid(self, val):
         if val:
