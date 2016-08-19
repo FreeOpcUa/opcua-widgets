@@ -61,7 +61,7 @@ class TreeWidget(QObject):
 
     def reload(self, item=None):
         if item is None:
-            item = self.mode.item(0, 0)
+            item = self.model.item(0, 0)
         for _ in range(item.rowCount()):
             child_it = item.child(0, 0)
             node = child_it.data()
