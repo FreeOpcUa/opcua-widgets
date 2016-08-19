@@ -7,6 +7,9 @@ from uawidgets.tree_widget import TreeWidget
 
 
 class GetNodeButton(QPushButton):
+    """
+    Create Button which will query a node
+    """
     def __init__(self, parent, currentnode, startnode):
         text = currentnode.get_browse_name().to_string()
         QPushButton.__init__(self, text, parent)

@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import QPushButton, QComboBox, QLabel, QLineEdit, QHBoxLayo
 
 from opcua import ua
 
-from uawidgets.get_node_dialog import GetNodeDialog
+from uawidgets.get_node_dialog import GetNodeButton
 
 
 class NewNodeBaseDialog(QDialog):
@@ -89,26 +89,19 @@ class NewNodeBaseDialog(QDialog):
 
 
 class NewUaObjectDialog(NewNodeBaseDialog):
-    def __init__(self, parent, title, server, node_type):
+    def __init__(self, parent, title, server, default_node_type, current_node_type=None):
         NewNodeBaseDialog.__init__(self, parent, title, server)
 
-        self.start_node_type = node_type
-        self.node_type = node_type
+        if current_node_type is None:
+            current_node_type = default_node_type
 
-        name = self.node_type.get_browse_name().to_string()
-        self.objectTypeButton = QPushButton(name, self)
+        self.objectTypeButton = GetNodeButton(self, current_node_type, default_node_type)
         self.objectTypeButton.clicked.connect(self._get_node_type)
         self.layout.addWidget(self.objectTypeButton)
-        
-    def _get_node_type(self):
-        node, ok = GetNodeDialog.getNode(self, self.start_node_type)
-        if ok:
-            self.node_type = node
-            self.objectTypeButton.setText(node.get_browse_name().to_string())
 
     def get_args(self):
         args = self.get_ns_and_name()
-        args.append(self.node_type)
+        args.append(self.objectTypeButton.get_node())
         print("NewUaObject:", args)
         return args
 
@@ -132,11 +125,8 @@ class NewUaVariableDialog(NewNodeBaseDialog):
         self.dtCheckBox.setChecked(True)
         self.dtCheckBox.stateChanged.connect(self._show_data_type)
         self.layout.addWidget(self.dtCheckBox)
-        self.original_data_type = server.get_node(ua.ObjectIds.BaseDataType)
-        self.data_type = self.original_data_type
-        name = self.data_type.get_browse_name().to_string()
-        self.dataTypeButton = QPushButton(name, self)
-        self.dataTypeButton.clicked.connect(self._get_data_type)
+        base_data_type = server.get_node(ua.ObjectIds.BaseDataType)
+        self.dataTypeButton = GetNodeButton(self, base_data_type)
         self.layout.addWidget(self.dataTypeButton)
         self.dataTypeButton.hide()
 
@@ -147,13 +137,6 @@ class NewUaVariableDialog(NewNodeBaseDialog):
             self.dataTypeButton.show()
         self.adjustSize()
 
-    def _get_data_type(self):
-        node, ok = GetNodeDialog.getNode(self, self.original_data_type)
-        print("GET NODE", node, ok)
-        if ok:
-            self.data_type = node
-            self.dataTypeButton.setText(node.get_browse_name().to_string())
-
     def get_args(self):
         args = self.get_ns_and_name()
         args.append(self.valLineEdit.text())
@@ -161,7 +144,7 @@ class NewUaVariableDialog(NewNodeBaseDialog):
         if self.dtCheckBox.isChecked():
             args.append(None)
         else:
-            args.append(self.data_type.nodeid)
+            args.append(self.dataTypeButton.get_node())
         print("NewUaVariable returns:", args)
         return args
 
