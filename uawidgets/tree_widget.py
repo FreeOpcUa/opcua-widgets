@@ -20,7 +20,9 @@ class TreeWidget(QObject):
         self.view.setModel(self.model)
         #self.view.setUniformRowHeights(True)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.view.header().setSectionResizeMode(1)
+        self.view.header().setSectionResizeMode(3)
+        self.view.header().setStretchLastSection(True)
+        #self.view.resizeColumnsToContents()
 
     def clear(self):
         self.model.clear()
@@ -72,12 +74,10 @@ class TreeWidget(QObject):
         if node:
             self.model.reload(node)
 
-
-
     def remove_current_item(self):
         idx = self.view.currentIndex()
-        it = self.model.removeRow(idx.row(), idx.parent())
- 
+        self.model.removeRow(idx.row(), idx.parent())
+
     def get_current_node(self, idx=None):
         if idx is None:
             idx = self.view.currentIndex()

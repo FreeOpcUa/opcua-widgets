@@ -1,4 +1,4 @@
-from PyQt5.QtCore import pyqtSignal, Qt, QObject
+from PyQt5.QtCore import pyqtSignal, Qt, QObject, QSettings
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QApplication, QMenu, QAction, QStyledItemDelegate, QComboBox, QWidget, QVBoxLayout, QCheckBox, QDialog
 
@@ -48,12 +48,18 @@ class AttrsWidget(QObject):
         QObject.__init__(self, view)
         self.view = view
         delegate = MyDelegate(self.view, self)
+        self.settings = QSettings()
         self.view.setItemDelegate(delegate)
         self.model = QStandardItemModel()
+        self.model.setHorizontalHeaderLabels(['Attribute', 'Value', 'DataType'])
+        state = self.settings.value("attrs_widget", None)
+        if state is not None:
+            self.view.header().restoreState(state)
         self.view.setModel(self.model)
         self.current_node = None
         self.model.itemChanged.connect(self._item_changed)
-        self.view.header().setSectionResizeMode(1)
+        self.view.header().setSectionResizeMode(0)
+        self.view.header().setStretchLastSection(True)
 
         # Context menu
         self.view.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -62,6 +68,9 @@ class AttrsWidget(QObject):
         copyaction.triggered.connect(self._copy_value)
         self._contextMenu = QMenu()
         self._contextMenu.addAction(copyaction)
+
+    def save_state(self):
+        self.settings.setValue("attrs_widget", self.view.header().saveState())
 
     def _item_changed(self, item):
         attr, dv = item.data(Qt.UserRole)
@@ -88,21 +97,21 @@ class AttrsWidget(QObject):
             QApplication.clipboard().setText(it.text())
 
     def clear(self):
-        self.model.clear()
+        # remove all rows but not header!!
+        self.model.removeRows(0, self.model.rowCount())
 
     def reload(self):
         self.show_attrs(self.current_node)
 
     def show_attrs(self, node):
         self.current_node = node
-        self.model.clear()
+        self.clear()
         if self.current_node:
             self._show_attrs()
         self.view.expandAll()
 
     def _show_attrs(self):
         attrs = self.get_all_attrs()
-        self.model.setHorizontalHeaderLabels(['Attribute', 'Value', 'DataType'])
         for attr, dv in attrs:
             if attr == ua.AttributeIds.DataType:
                 string = data_type_to_string(dv)
