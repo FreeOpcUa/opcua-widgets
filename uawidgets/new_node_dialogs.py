@@ -150,3 +150,17 @@ class NewUaVariableDialog(NewNodeBaseDialog):
 
 
 
+class NewUaMethodDialog(NewNodeBaseDialog):
+    def __init__(self, parent, title, server):
+        NewNodeBaseDialog.__init__(self, parent, title, server)
+        # FIXME: design UI!
+
+    def get_args(self):
+        args = self.get_ns_and_name()
+        args.append(None)  # callback, this cannot be set from modeler
+        args.append([])  # input args
+        args.append([])  # output args
+        print("NewUaMethod returns:", args)
+        return args 
+
+
