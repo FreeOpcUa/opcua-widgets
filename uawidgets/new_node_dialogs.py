@@ -91,14 +91,13 @@ class NewNodeBaseDialog(QDialog):
 
 
 class NewUaObjectDialog(NewNodeBaseDialog):
-    def __init__(self, parent, title, server, default_node_type, current_node_type=None):
+    def __init__(self, parent, title, server, base_node_type, current_node_type=None):
         NewNodeBaseDialog.__init__(self, parent, title, server)
 
         if current_node_type is None:
-            current_node_type = default_node_type
+            current_node_type = base_node_type
 
-        self.objectTypeButton = GetNodeButton(self, current_node_type, default_node_type)
-        self.objectTypeButton.clicked.connect(self._get_node_type)
+        self.objectTypeButton = GetNodeButton(self, current_node_type, base_node_type)
         self.layout.addWidget(self.objectTypeButton)
 
     def get_args(self):
