@@ -2,6 +2,8 @@ from PyQt5.QtCore import QSettings, Qt
 from PyQt5.QtWidgets import QPushButton, QComboBox, QLabel, QLineEdit, QHBoxLayout, QDialog, QDialogButtonBox, QVBoxLayout, QCheckBox
 
 from opcua import ua
+from opcua.common.ua_utils import string_to_variant
+from opcua.common.ua_utils import dtype_to_vtype
 
 from uawidgets.get_node_dialog import GetNodeButton
 
@@ -11,6 +13,7 @@ class NewNodeBaseDialog(QDialog):
         QDialog.__init__(self, parent)
         self.setWindowTitle(title)
         self.settings = QSettings()
+        self.server = server
 
         self.vlayout = QVBoxLayout(self)
         self.layout = QHBoxLayout()
@@ -50,7 +53,6 @@ class NewNodeBaseDialog(QDialog):
         self.buttons.rejected.connect(self.reject)
 
     def _store_state(self):
-        print("STORE")
         self.settings.setValue("last_namespace", self.nsComboBox.currentIndex())
 
     def _show_nodeid(self, val):
@@ -114,37 +116,24 @@ class NewUaVariableDialog(NewNodeBaseDialog):
         self.valLineEdit.setText(str(default_value))
         self.layout.addWidget(self.valLineEdit)
 
-        self.vtypeComboBox = QComboBox(self)
-        vtypes = [vt.name for vt in ua.VariantType]
-        for vtype in vtypes:
-            self.vtypeComboBox.addItem(vtype)
-        self.vtypeComboBox.setCurrentText("Float")
-        self.layout.addWidget(self.vtypeComboBox)
-
-        self.dtCheckBox = QCheckBox("Auto data type", self)
-        self.dtCheckBox.setChecked(True)
-        self.dtCheckBox.stateChanged.connect(self._show_data_type)
-        self.layout.addWidget(self.dtCheckBox)
         base_data_type = server.get_node(ua.ObjectIds.BaseDataType)
-        self.dataTypeButton = GetNodeButton(self, base_data_type)
-        self.layout.addWidget(self.dataTypeButton)
-        self.dataTypeButton.hide()
-
-    def _show_data_type(self, val):
-        if val:
-            self.dataTypeButton.hide()
+        dtype_str = self.settings.value("last_datatype", None)
+        if dtype_str is None:
+            current_type = server.get_node(ua.ObjectIds.Float)
         else:
-            self.dataTypeButton.show()
-        self.adjustSize()
+            current_type = server.get_node(ua.NodeId.from_string(dtype_str))
+        self.dataTypeButton = GetNodeButton(self, current_type, base_data_type)
+        self.layout.addWidget(self.dataTypeButton)
 
     def get_args(self):
         args = self.get_ns_and_name()
-        args.append(self.valLineEdit.text())
-        args.append(getattr(ua.VariantType, self.vtypeComboBox.currentText()))
-        if self.dtCheckBox.isChecked():
-            args.append(None)
-        else:
-            args.append(self.dataTypeButton.get_node())
+        dtype = self.dataTypeButton.get_node()
+        self.settings.setValue("last_datatype", dtype.nodeid.to_string())
+        vtype = dtype_to_vtype(self.server, dtype)
+        var = string_to_variant(self.valLineEdit.text(), vtype)
+        args.append(var)
+        args.append(vtype)
+        args.append(dtype.nodeid)
         print("NewUaVariable returns:", args)
         return args
 
