@@ -44,9 +44,10 @@ class AttrsWidget(QObject):
     error = pyqtSignal(Exception)
     modified = pyqtSignal()
 
-    def __init__(self, view):
+    def __init__(self, view, show_timestamps=True):
         QObject.__init__(self, view)
         self.view = view
+        self._timestamps = show_timestamps
         delegate = MyDelegate(self.view, self)
         delegate.error.connect(self.error.emit)
         self.settings = QSettings()
@@ -81,6 +82,8 @@ class AttrsWidget(QObject):
         except Exception as ex:
             self.error.emit(ex)
             raise
+        #if attr == ua.AttributeIds.Value:
+            #self._show_timestamps(item, dv)
         self.modified.emit()
 
     def showContextMenu(self, position):
@@ -129,12 +132,18 @@ class AttrsWidget(QObject):
             vitem.setData((attr, dv), Qt.UserRole)
             self.model.appendRow([name_item, vitem, QStandardItem(dv.Value.VariantType.name)])
 
-            # special case for Value, we want to show timestamps
-            if attr == ua.AttributeIds.Value:
-                string = val_to_string(dv.ServerTimestamp)
-                name_item.appendRow([QStandardItem("Server Timestamp"), QStandardItem(string), QStandardItem(ua.VariantType.DateTime.name)])
-                string = val_to_string(dv.SourceTimestamp)
-                name_item.appendRow([QStandardItem("Source Timestamp"), QStandardItem(string), QStandardItem(ua.VariantType.DateTime.name)])
+            if self._timestamps and attr == ua.AttributeIds.Value:
+                self._show_timestamps(name_item, dv)
+
+    def _show_timestamps(self, item, dv):
+        while item.hasChildren():
+            print("has children", dv)
+            self.model.removeRow(0, item.index())
+        string = val_to_string(dv.ServerTimestamp)
+        item.appendRow([QStandardItem("Server Timestamp"), QStandardItem(string), QStandardItem(ua.VariantType.DateTime.name)])
+        string = val_to_string(dv.SourceTimestamp)
+        item.appendRow([QStandardItem("Source Timestamp"), QStandardItem(string), QStandardItem(ua.VariantType.DateTime.name)])
+
 
     def get_all_attrs(self):
         attrs = [attr for attr in ua.AttributeIds]
@@ -224,6 +233,7 @@ class MyDelegate(QStyledItemDelegate):
                 self.error.emit(ex)
                 raise
         model.setItemData(idx, {Qt.DisplayRole: text, Qt.UserRole: (attr, dv)})
+
 
 def data_type_to_string(dv):
     # a bit too complex, we could just display browse name of node but it requires a query
