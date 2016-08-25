@@ -1,3 +1,4 @@
+from datetime import datetime
 from PyQt5.QtCore import pyqtSignal, Qt, QObject, QSettings
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QApplication, QMenu, QAction, QStyledItemDelegate, QComboBox, QWidget, QVBoxLayout, QCheckBox, QDialog
@@ -76,14 +77,16 @@ class AttrsWidget(QObject):
 
     def _item_changed(self, item):
         attr, dv = item.data(Qt.UserRole)
-        print("Item changed", attr, dv)
+        if attr == ua.AttributeIds.Value:
+            dv.SourceTimestamp = datetime.now()
         try:
             self.current_node.set_attribute(attr, dv)
         except Exception as ex:
             self.error.emit(ex)
             raise
-        #if attr == ua.AttributeIds.Value:
-            #self._show_timestamps(item, dv)
+        if attr == ua.AttributeIds.Value:
+            it = self.model.item(item.index().row(), 0)
+            self._show_timestamps(it, dv)
         self.modified.emit()
 
     def showContextMenu(self, position):
@@ -137,7 +140,6 @@ class AttrsWidget(QObject):
 
     def _show_timestamps(self, item, dv):
         while item.hasChildren():
-            print("has children", dv)
             self.model.removeRow(0, item.index())
         string = val_to_string(dv.ServerTimestamp)
         item.appendRow([QStandardItem("Server Timestamp"), QStandardItem(string), QStandardItem(ua.VariantType.DateTime.name)])
