@@ -41,13 +41,14 @@ class BitEditor(QDialog):
 
 class AttrsWidget(QObject):
 
-    error = pyqtSignal(str)
+    error = pyqtSignal(Exception)
     modified = pyqtSignal()
 
     def __init__(self, view):
         QObject.__init__(self, view)
         self.view = view
         delegate = MyDelegate(self.view, self)
+        delegate.error.connect(self.error.emit)
         self.settings = QSettings()
         self.view.setItemDelegate(delegate)
         self.model = QStandardItemModel()
@@ -151,6 +152,9 @@ class AttrsWidget(QObject):
 
 
 class MyDelegate(QStyledItemDelegate):
+
+    error = pyqtSignal(Exception)
+
     def __init__(self, parent, attrs_widget):
         QStyledItemDelegate.__init__(self, parent)
         self.attrs_widget = attrs_widget
@@ -214,8 +218,11 @@ class MyDelegate(QStyledItemDelegate):
                 text = editor.currentText()
             else:
                 text = editor.text()
-            dv.Value = string_to_variant(text, dv.Value.VariantType)
-        #model.setItemData(idx, [text, (attr, dv)], [Qt.DisplayRole, Qt.UserRole])
+            try:
+                dv.Value = string_to_variant(text, dv.Value.VariantType)
+            except Exception as ex:
+                self.error.emit(ex)
+                raise
         model.setItemData(idx, {Qt.DisplayRole: text, Qt.UserRole: (attr, dv)})
 
 def data_type_to_string(dv):
