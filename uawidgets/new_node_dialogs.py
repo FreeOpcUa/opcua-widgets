@@ -1,5 +1,5 @@
 from PyQt5.QtCore import QSettings, Qt
-from PyQt5.QtWidgets import QPushButton, QComboBox, QLabel, QLineEdit, QHBoxLayout, QDialog, QDialogButtonBox, QVBoxLayout, QCheckBox
+from PyQt5.QtWidgets import QPushButton, QComboBox, QLabel, QLineEdit, QHBoxLayout, QDialog, QDialogButtonBox, QVBoxLayout, QCheckBox, QFrame
 
 from opcua import ua
 from opcua.common.ua_utils import string_to_variant
@@ -137,18 +137,97 @@ class NewUaVariableDialog(NewNodeBaseDialog):
         return args
 
 
-
 class NewUaMethodDialog(NewNodeBaseDialog):
     def __init__(self, parent, title, server):
         NewNodeBaseDialog.__init__(self, parent, title, server)
-        # FIXME: design UI!
+        # FIXME current temporary UI is fixed; should be changed to listview or treeview object
+
+        self.widgets = []
+
+        self.inplayout = QVBoxLayout(self)
+        self.vlayout.addLayout(self.inplayout)
+        self.inplayout.addLayout(self.add_header("Inputs"))
+        self.inplayout.addLayout(self.add_row("input"))
+        self.inplayout.addLayout(self.add_row("input"))
+        self.inplayout.addLayout(self.add_row("input"))
+
+        self.ouplayout = QVBoxLayout(self)
+        self.vlayout.addLayout(self.ouplayout)
+        self.ouplayout.addLayout(self.add_header("Outputs"))
+        self.ouplayout.addLayout(self.add_row("output"))
+        self.ouplayout.addLayout(self.add_row("output"))
+        self.ouplayout.addLayout(self.add_row("output"))
 
     def get_args(self):
         args = self.get_ns_and_name()
+
+        input_args = []
+        output_args = []
+
+        for row in self.widgets:
+                dtype = row[3].get_node()
+                name = row[1].text()
+                description = row[2].text()
+
+                if name != "":
+
+                    # FIXME arguments need to be created from dynamaic UA
+                    method_arg = ua.Argument()
+                    method_arg.Name = name
+                    method_arg.DataType = ua.TwoByteNodeId(dtype.nodeid)
+                    method_arg.ValueRank = -1
+                    method_arg.ArrayDimensions = []
+                    method_arg.Description = ua.LocalizedText(description)
+
+                    if row[0] == 'input':
+                        input_args.append(method_arg)
+                    else:
+                        output_args.append(method_arg)
+
         args.append(None)  # callback, this cannot be set from modeler
-        args.append([])  # input args
-        args.append([])  # output args
+
+        args.append(input_args)  # input args
+        args.append(output_args)  # output args
         print("NewUaMethod returns:", args)
-        return args 
+        return args
+
+    def add_row(self, mode):
+        rowlayout = QHBoxLayout(self)
+
+        rowlayout.addWidget(QLabel("Arg Name:", self))
+        argNameLabel = QLineEdit(self)
+        argNameLabel.setText("")
+        rowlayout.addWidget(argNameLabel)
+
+        rowlayout.addWidget(QLabel("Description:", self))
+        argDescLabel = QLineEdit(self)
+        argDescLabel.setText("")
+        rowlayout.addWidget(argDescLabel)
+
+        base_data_type = self.server.get_node(ua.ObjectIds.BaseDataType)
+        dtype_str = self.settings.value("last_datatype", None)
+        if dtype_str is None:
+            current_type = self.server.get_node(ua.ObjectIds.Float)
+        else:
+            current_type = self.server.get_node(ua.NodeId.from_string(dtype_str))
+        dataTypeButton = GetNodeButton(self, current_type, base_data_type)
+        rowlayout.addWidget(dataTypeButton)
+
+        self.widgets.append([mode, argNameLabel, argDescLabel, dataTypeButton])
+        return rowlayout
+
+    def add_header(self, header):
+        header_row = QHBoxLayout(self)
+        header_row.addWidget(QLabel(header, self))
+        header_row.addWidget(self.add_h_line())
+        # header_row.addWidget(QLabel("+ button", self))  # FIXME this needs to be a button which triggers add_row()
+        return header_row
+
+    def add_h_line(self):
+        line = QFrame()
+        line.setFrameShape(QFrame.HLine)
+        line.setFrameShadow(QFrame.Sunken)
+        return line
+
 
 
