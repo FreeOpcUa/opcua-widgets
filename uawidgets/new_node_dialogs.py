@@ -148,13 +148,17 @@ class NewUaMethodDialog(NewNodeBaseDialog):
 
         self.widgets = []
 
-        self.vlayout.addLayout(self.add_header("Inputs"))
-        self.vlayout.addLayout(self.add_row("input"))
-        self.vlayout.addLayout(self.add_row("input"))
+        self.inplayout = QVBoxLayout(self)
+        self.vlayout.addLayout(self.inplayout)
+        self.inplayout.addLayout(self.add_header("Inputs"))
+        self.inplayout.addLayout(self.add_row("input"))
+        self.inplayout.addLayout(self.add_row("input"))
 
-        self.vlayout.addLayout(self.add_header("Outputs"))
-        self.vlayout.addLayout(self.add_row("output"))
-        self.vlayout.addLayout(self.add_row("output"))
+        self.ouplayout = QVBoxLayout(self)
+        self.vlayout.addLayout(self.ouplayout)
+        self.ouplayout.addLayout(self.add_header("Outputs"))
+        self.ouplayout.addLayout(self.add_row("output"))
+        self.ouplayout.addLayout(self.add_row("output"))
 
     def get_args(self):
         args = self.get_ns_and_name()
