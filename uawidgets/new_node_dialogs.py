@@ -140,11 +140,7 @@ class NewUaVariableDialog(NewNodeBaseDialog):
 class NewUaMethodDialog(NewNodeBaseDialog):
     def __init__(self, parent, title, server):
         NewNodeBaseDialog.__init__(self, parent, title, server)
-        # FIXME: design UI!
-
-        # FIXME below widgets need to be encapsulated into a class which can be created dynamically,
-        # FIXME perhaps with a plus button or something; get_args then needs to loop through the created
-        # FIXME widgets to collect all argument info for ua.Argument creation
+        # FIXME current temporary UI is fixed; should be changed to listview or treeview object
 
         self.widgets = []
 
@@ -153,10 +149,12 @@ class NewUaMethodDialog(NewNodeBaseDialog):
         self.inplayout.addLayout(self.add_header("Inputs"))
         self.inplayout.addLayout(self.add_row("input"))
         self.inplayout.addLayout(self.add_row("input"))
+        self.inplayout.addLayout(self.add_row("input"))
 
         self.ouplayout = QVBoxLayout(self)
         self.vlayout.addLayout(self.ouplayout)
         self.ouplayout.addLayout(self.add_header("Outputs"))
+        self.ouplayout.addLayout(self.add_row("output"))
         self.ouplayout.addLayout(self.add_row("output"))
         self.ouplayout.addLayout(self.add_row("output"))
 
@@ -167,27 +165,29 @@ class NewUaMethodDialog(NewNodeBaseDialog):
         output_args = []
 
         for row in self.widgets:
-            dtype = row[3].get_node()
-            name = row[1].text()
-            description = row[2].text()
+                dtype = row[3].get_node()
+                name = row[1].text()
+                description = row[2].text()
 
-            # FIXME arguments need to be created from dynamaic UA
-            method_arg = ua.Argument()
-            method_arg.Name = name
-            method_arg.DataType = ua.TwoByteNodeId(dtype.nodeid)
-            method_arg.ValueRank = -1
-            method_arg.ArrayDimensions = []
-            method_arg.Description = ua.LocalizedText(description)
+                if name != "":
 
-            if row[0] == 'input':
-                input_args.append(method_arg)
-            else:
-                output_args.append(method_arg)
+                    # FIXME arguments need to be created from dynamaic UA
+                    method_arg = ua.Argument()
+                    method_arg.Name = name
+                    method_arg.DataType = ua.TwoByteNodeId(dtype.nodeid)
+                    method_arg.ValueRank = -1
+                    method_arg.ArrayDimensions = []
+                    method_arg.Description = ua.LocalizedText(description)
+
+                    if row[0] == 'input':
+                        input_args.append(method_arg)
+                    else:
+                        output_args.append(method_arg)
 
         args.append(None)  # callback, this cannot be set from modeler
 
         args.append(input_args)  # input args
-        args.append([output_args])  # output args
+        args.append(output_args)  # output args
         print("NewUaMethod returns:", args)
         return args
 
@@ -196,12 +196,12 @@ class NewUaMethodDialog(NewNodeBaseDialog):
 
         rowlayout.addWidget(QLabel("Arg Name:", self))
         argNameLabel = QLineEdit(self)
-        argNameLabel.setText("ArgName")
+        argNameLabel.setText("")
         rowlayout.addWidget(argNameLabel)
 
         rowlayout.addWidget(QLabel("Description:", self))
         argDescLabel = QLineEdit(self)
-        argDescLabel.setText("ArgDesc")
+        argDescLabel.setText("")
         rowlayout.addWidget(argDescLabel)
 
         base_data_type = self.server.get_node(ua.ObjectIds.BaseDataType)
@@ -220,7 +220,7 @@ class NewUaMethodDialog(NewNodeBaseDialog):
         header_row = QHBoxLayout(self)
         header_row.addWidget(QLabel(header, self))
         header_row.addWidget(self.add_h_line())
-        header_row.addWidget(QLabel("+ button", self))  # FIXME this needs to be a button which triggers add_row()
+        # header_row.addWidget(QLabel("+ button", self))  # FIXME this needs to be a button which triggers add_row()
         return header_row
 
     def add_h_line(self):
