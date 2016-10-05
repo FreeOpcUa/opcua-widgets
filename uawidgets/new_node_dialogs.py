@@ -178,7 +178,7 @@ class NewUaMethodDialog(NewNodeBaseDialog):
 
         args.append(None)  # callback, this cannot be set from modeler
 
-        args.append([inargx])  # input args
+        args.append([method_arg])  # input args
         args.append([])  # output args
         print("NewUaMethod returns:", args)
         return args 
