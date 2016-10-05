@@ -137,16 +137,48 @@ class NewUaVariableDialog(NewNodeBaseDialog):
         return args
 
 
-
 class NewUaMethodDialog(NewNodeBaseDialog):
     def __init__(self, parent, title, server):
         NewNodeBaseDialog.__init__(self, parent, title, server)
         # FIXME: design UI!
 
+        # FIXME below widgets need to be encapsulated into a class which can be created dynamically,
+        # FIXME perhaps with a plus button or something; get_args then needs to loop through the created
+        # FIXME widgets to collect all argument info for ua.Argument creation
+        self.layout.addWidget(QLabel("Arg0 Name:", self))
+        self.arg0NameLabel = QLineEdit(self)
+        self.arg0NameLabel.setText("ArgName")
+        self.layout.addWidget(self.arg0NameLabel)
+
+        self.layout.addWidget(QLabel("Arg0 Desc:", self))
+        self.arg0DescLabel = QLineEdit(self)
+        self.arg0DescLabel.setText("ArgDesc")
+        self.layout.addWidget(self.arg0DescLabel)
+
+        base_data_type = server.get_node(ua.ObjectIds.BaseDataType)
+        dtype_str = self.settings.value("last_datatype", None)
+        if dtype_str is None:
+            current_type = server.get_node(ua.ObjectIds.Float)
+        else:
+            current_type = server.get_node(ua.NodeId.from_string(dtype_str))
+        self.dataTypeButton = GetNodeButton(self, current_type, base_data_type)
+        self.layout.addWidget(self.dataTypeButton)
+
     def get_args(self):
         args = self.get_ns_and_name()
+        dtype = self.dataTypeButton.get_node()
+
+        # FIXME arguments need to be created from dynamaic UA
+        method_arg = ua.Argument()
+        method_arg.Name = self.arg0NameLabel.text()
+        method_arg.DataType = ua.TwoByteNodeId(dtype.nodeid)
+        method_arg.ValueRank = -1
+        method_arg.ArrayDimensions = []
+        method_arg.Description = ua.LocalizedText(self.arg0DescLabel.text())
+
         args.append(None)  # callback, this cannot be set from modeler
-        args.append([])  # input args
+
+        args.append([inargx])  # input args
         args.append([])  # output args
         print("NewUaMethod returns:", args)
         return args 
