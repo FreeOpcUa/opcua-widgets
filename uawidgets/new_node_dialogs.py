@@ -1,5 +1,5 @@
 from PyQt5.QtCore import QSettings, Qt
-from PyQt5.QtWidgets import QPushButton, QComboBox, QLabel, QLineEdit, QHBoxLayout, QDialog, QDialogButtonBox, QVBoxLayout, QCheckBox
+from PyQt5.QtWidgets import QPushButton, QComboBox, QLabel, QLineEdit, QHBoxLayout, QDialog, QDialogButtonBox, QVBoxLayout, QCheckBox, QFrame
 
 from opcua import ua
 from opcua.common.ua_utils import string_to_variant
@@ -145,42 +145,85 @@ class NewUaMethodDialog(NewNodeBaseDialog):
         # FIXME below widgets need to be encapsulated into a class which can be created dynamically,
         # FIXME perhaps with a plus button or something; get_args then needs to loop through the created
         # FIXME widgets to collect all argument info for ua.Argument creation
-        self.layout.addWidget(QLabel("Arg0 Name:", self))
-        self.arg0NameLabel = QLineEdit(self)
-        self.arg0NameLabel.setText("ArgName")
-        self.layout.addWidget(self.arg0NameLabel)
 
-        self.layout.addWidget(QLabel("Arg0 Desc:", self))
-        self.arg0DescLabel = QLineEdit(self)
-        self.arg0DescLabel.setText("ArgDesc")
-        self.layout.addWidget(self.arg0DescLabel)
+        self.widgets = []
 
-        base_data_type = server.get_node(ua.ObjectIds.BaseDataType)
-        dtype_str = self.settings.value("last_datatype", None)
-        if dtype_str is None:
-            current_type = server.get_node(ua.ObjectIds.Float)
-        else:
-            current_type = server.get_node(ua.NodeId.from_string(dtype_str))
-        self.dataTypeButton = GetNodeButton(self, current_type, base_data_type)
-        self.layout.addWidget(self.dataTypeButton)
+        self.vlayout.addLayout(self.add_header("Inputs"))
+        self.vlayout.addLayout(self.add_row("input"))
+        self.vlayout.addLayout(self.add_row("input"))
+
+        self.vlayout.addLayout(self.add_header("Outputs"))
+        self.vlayout.addLayout(self.add_row("output"))
+        self.vlayout.addLayout(self.add_row("output"))
 
     def get_args(self):
         args = self.get_ns_and_name()
-        dtype = self.dataTypeButton.get_node()
 
-        # FIXME arguments need to be created from dynamaic UA
-        method_arg = ua.Argument()
-        method_arg.Name = self.arg0NameLabel.text()
-        method_arg.DataType = ua.TwoByteNodeId(dtype.nodeid)
-        method_arg.ValueRank = -1
-        method_arg.ArrayDimensions = []
-        method_arg.Description = ua.LocalizedText(self.arg0DescLabel.text())
+        input_args = []
+        output_args = []
+
+        for row in self.widgets:
+            dtype = row[3].get_node()
+            name = row[1].text()
+            description = row[2].text()
+
+            # FIXME arguments need to be created from dynamaic UA
+            method_arg = ua.Argument()
+            method_arg.Name = name
+            method_arg.DataType = ua.TwoByteNodeId(dtype.nodeid)
+            method_arg.ValueRank = -1
+            method_arg.ArrayDimensions = []
+            method_arg.Description = ua.LocalizedText(description)
+
+            if row[0] == 'input':
+                input_args.append(method_arg)
+            else:
+                output_args.append(method_arg)
 
         args.append(None)  # callback, this cannot be set from modeler
 
-        args.append([method_arg])  # input args
-        args.append([])  # output args
+        args.append(input_args)  # input args
+        args.append([output_args])  # output args
         print("NewUaMethod returns:", args)
-        return args 
+        return args
+
+    def add_row(self, mode):
+        rowlayout = QHBoxLayout(self)
+
+        rowlayout.addWidget(QLabel("Arg Name:", self))
+        argNameLabel = QLineEdit(self)
+        argNameLabel.setText("ArgName")
+        rowlayout.addWidget(argNameLabel)
+
+        rowlayout.addWidget(QLabel("Description:", self))
+        argDescLabel = QLineEdit(self)
+        argDescLabel.setText("ArgDesc")
+        rowlayout.addWidget(argDescLabel)
+
+        base_data_type = self.server.get_node(ua.ObjectIds.BaseDataType)
+        dtype_str = self.settings.value("last_datatype", None)
+        if dtype_str is None:
+            current_type = self.server.get_node(ua.ObjectIds.Float)
+        else:
+            current_type = self.server.get_node(ua.NodeId.from_string(dtype_str))
+        dataTypeButton = GetNodeButton(self, current_type, base_data_type)
+        rowlayout.addWidget(dataTypeButton)
+
+        self.widgets.append([mode, argNameLabel, argDescLabel, dataTypeButton])
+        return rowlayout
+
+    def add_header(self, header):
+        header_row = QHBoxLayout(self)
+        header_row.addWidget(QLabel(header, self))
+        header_row.addWidget(self.add_h_line())
+        header_row.addWidget(QLabel("+ button", self))  # FIXME this needs to be a button which triggers add_row()
+        return header_row
+
+    def add_h_line(self):
+        line = QFrame()
+        line.setFrameShape(QFrame.HLine)
+        line.setFrameShadow(QFrame.Sunken)
+        return line
+
 
 
