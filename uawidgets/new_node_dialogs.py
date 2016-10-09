@@ -62,23 +62,19 @@ class NewNodeBaseDialog(QDialog):
             self.nodeidLineEdit.show()
         self.adjustSize()
 
-    def get_ns_and_name(self):
-        args = []
+    def get_nodeid_and_bname(self):
         ns = self.nsComboBox.currentIndex()
         name = self.nameLabel.text()
+        bname = ua.QualifiedName(name, ns)
         if self.nodeidCheckBox.isChecked():
-            args.append(ns)
-            args.append(name)
+            nodeid = ua.NodeId(namespaceidx=ns)
         else:
             nodeid = ua.NodeId.from_string(self.nodeidLineEdit.text())
-            args.append(nodeid)
-            args.append(ua.QualifiedName(name, ns))
-        return args
+        return nodeid, bname
 
     def get_args(self):
-        args = self.get_ns_and_name()
-        print("NewNodeBaseDialog returns:", args)
-        return args 
+        nodeid, bname = self.get_nodeid_and_bname()
+        return nodeid, bname 
 
     @classmethod
     def getArgs(cls, parent, title, server, *args, **kwargs):
@@ -101,10 +97,9 @@ class NewUaObjectDialog(NewNodeBaseDialog):
         self.layout.addWidget(self.objectTypeButton)
 
     def get_args(self):
-        args = self.get_ns_and_name()
-        args.append(self.objectTypeButton.get_node())
-        print("NewUaObject:", args)
-        return args
+        nodeid, bname = self.get_nodeid_and_bname()
+        otype = self.objectTypeButton.get_node()
+        return nodeid, bname, otype
 
 
 class NewUaVariableDialog(NewNodeBaseDialog):
@@ -125,16 +120,12 @@ class NewUaVariableDialog(NewNodeBaseDialog):
         self.layout.addWidget(self.dataTypeButton)
 
     def get_args(self):
-        args = self.get_ns_and_name()
+        nodeid, bname = self.get_nodeid_and_bname()
         dtype = self.dataTypeButton.get_node()
         self.settings.setValue("last_datatype", dtype.nodeid.to_string())
         vtype = dtype_to_vtype(self.server, dtype)
         var = string_to_variant(self.valLineEdit.text(), vtype)
-        args.append(var)
-        args.append(vtype)
-        args.append(dtype.nodeid)
-        print("NewUaVariable returns:", args)
-        return args
+        return nodeid, bname, var, vtype, dtype.nodeid
 
 
 class NewUaMethodDialog(NewNodeBaseDialog):
@@ -159,37 +150,32 @@ class NewUaMethodDialog(NewNodeBaseDialog):
         self.ouplayout.addLayout(self.add_row("output"))
 
     def get_args(self):
-        args = self.get_ns_and_name()
+        nodeid, bname = self.get_nodeid_and_bname()
 
         input_args = []
         output_args = []
 
         for row in self.widgets:
-                dtype = row[3].get_node()
-                name = row[1].text()
-                description = row[2].text()
+            dtype = row[3].get_node()
+            name = row[1].text()
+            description = row[2].text()
 
-                if name != "":
+            if name != "":
+                # FIXME arguments need to be created from dynamaic UA
+                method_arg = ua.Argument()
+                method_arg.Name = name
+                method_arg.DataType = ua.TwoByteNodeId(dtype.nodeid)
+                method_arg.ValueRank = -1
+                method_arg.ArrayDimensions = []
+                method_arg.Description = ua.LocalizedText(description)
 
-                    # FIXME arguments need to be created from dynamaic UA
-                    method_arg = ua.Argument()
-                    method_arg.Name = name
-                    method_arg.DataType = ua.TwoByteNodeId(dtype.nodeid)
-                    method_arg.ValueRank = -1
-                    method_arg.ArrayDimensions = []
-                    method_arg.Description = ua.LocalizedText(description)
+                if row[0] == 'input':
+                    input_args.append(method_arg)
+                else:
+                    output_args.append(method_arg)
 
-                    if row[0] == 'input':
-                        input_args.append(method_arg)
-                    else:
-                        output_args.append(method_arg)
-
-        args.append(None)  # callback, this cannot be set from modeler
-
-        args.append(input_args)  # input args
-        args.append(output_args)  # output args
-        print("NewUaMethod returns:", args)
-        return args
+        # callback is None, this cannot be set from modeler
+        return nodeid, bname, None, input_args, output_args
 
     def add_row(self, mode):
         rowlayout = QHBoxLayout(self)
