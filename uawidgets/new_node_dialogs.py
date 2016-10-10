@@ -164,7 +164,7 @@ class NewUaMethodDialog(NewNodeBaseDialog):
                 # FIXME arguments need to be created from dynamaic UA
                 method_arg = ua.Argument()
                 method_arg.Name = name
-                method_arg.DataType = ua.TwoByteNodeId(dtype.nodeid)
+                method_arg.DataType = dtype.nodeid
                 method_arg.ValueRank = -1
                 method_arg.ArrayDimensions = []
                 method_arg.Description = ua.LocalizedText(description)
