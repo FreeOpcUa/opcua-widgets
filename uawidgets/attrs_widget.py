@@ -229,8 +229,14 @@ class MyDelegate(QStyledItemDelegate):
                 text = editor.currentText()
             else:
                 text = editor.text()
+
             try:
-                dv.Value = string_to_variant(text, dv.Value.VariantType)
+                # if user is setting a value on a null variant, try using the nodes datatype instead
+                if dv.Value.VariantType is ua.VariantType.Null:
+                    dtype = self.attrs_widget.current_node.get_data_type_as_variant_type()
+                    dv.Value = string_to_variant(text, dtype)
+                else:
+                    dv.Value = string_to_variant(text, dv.Value.VariantType)
             except Exception as ex:
                 self.error.emit(ex)
                 raise
@@ -240,7 +246,7 @@ class MyDelegate(QStyledItemDelegate):
 def data_type_to_string(dv):
     # a bit too complex, we could just display browse name of node but it requires a query
     if isinstance(dv.Value.Value.Identifier, int) and dv.Value.Value.Identifier < 63:
-        string = ua.DataType_to_VariantType(dv.Value.Value).name
+        string = ua.datatype_to_varianttype(dv.Value.Value).name
     elif dv.Value.Value.Identifier in ua.ObjectIdNames:
         string = ua.ObjectIdNames[dv.Value.Value.Identifier]
     else:
