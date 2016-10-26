@@ -229,8 +229,14 @@ class MyDelegate(QStyledItemDelegate):
                 text = editor.currentText()
             else:
                 text = editor.text()
+
             try:
-                dv.Value = string_to_variant(text, dv.Value.VariantType)
+                # if user is setting a value on a null variant, try using the nodes datatype instead
+                if dv.Value.VariantType is ua.VariantType.Null:
+                    dtype = self.attrs_widget.current_node.get_data_type_as_variant_type()
+                    dv.Value = string_to_variant(text, dtype)
+                else:
+                    dv.Value = string_to_variant(text, dv.Value.VariantType)
             except Exception as ex:
                 self.error.emit(ex)
                 raise
