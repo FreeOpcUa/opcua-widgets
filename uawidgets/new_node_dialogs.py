@@ -20,7 +20,7 @@ class NewNodeBaseDialog(QDialog):
         self.vlayout.addLayout(self.layout)
 
         self.layout.addWidget(QLabel("ns:", self))
-        
+
         self.nsComboBox = QComboBox(self)
         uries = server.get_namespace_array()
         for uri in uries:
@@ -33,17 +33,24 @@ class NewNodeBaseDialog(QDialog):
 
         self.layout.addWidget(QLabel("Name:", self))
         self.nameLabel = QLineEdit(self)
+        self.nameLabel.setMinimumWidth(120)
         self.nameLabel.setText("NoName")
         self.layout.addWidget(self.nameLabel)
-
         self.nodeidCheckBox = QCheckBox("Auto NodeId", self)
-        self.nodeidCheckBox.setChecked(True)
         self.nodeidCheckBox.stateChanged.connect(self._show_nodeid)
         self.layout.addWidget(self.nodeidCheckBox)
         self.nodeidLineEdit = QLineEdit(self)
-        self.nodeidLineEdit.setText("ns={};i=20000".format(nsidx))
+        self.nodeidLineEdit.setMinimumWidth(80)
+        self.nodeidLineEdit.setText(self.settings.value("last_nodeid_type", "i=20000"))
         self.layout.addWidget(self.nodeidLineEdit)
-        self.nodeidLineEdit.hide()
+
+        # restore check box state from settings
+        if self.settings.value("last_auto_nodeid_state", True) == "false":
+            self.nodeidCheckBox.setChecked(False)
+            self.nodeidLineEdit.show()
+        else:
+            self.nodeidCheckBox.setChecked(True)
+            self.nodeidLineEdit.hide()
 
         self.buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, Qt.Horizontal, self)
         self.vlayout.addWidget(self.buttons)
@@ -54,6 +61,8 @@ class NewNodeBaseDialog(QDialog):
 
     def _store_state(self):
         self.settings.setValue("last_namespace", self.nsComboBox.currentIndex())
+        self.settings.setValue("last_auto_nodeid_state", self.nodeidCheckBox.isChecked())
+        self.settings.setValue("last_nodeid_type", self.nodeidLineEdit.text()[0:2])
 
     def _show_nodeid(self, val):
         if val:
@@ -69,12 +78,13 @@ class NewNodeBaseDialog(QDialog):
         if self.nodeidCheckBox.isChecked():
             nodeid = ua.NodeId(namespaceidx=ns)
         else:
-            nodeid = ua.NodeId.from_string(self.nodeidLineEdit.text())
+            ns_nodeid = "ns={};".format(ns) + self.nodeidLineEdit.text()
+            nodeid = ua.NodeId.from_string(ns_nodeid)
         return nodeid, bname
 
     def get_args(self):
         nodeid, bname = self.get_nodeid_and_bname()
-        return nodeid, bname 
+        return nodeid, bname
 
     @classmethod
     def getArgs(cls, parent, title, server, *args, **kwargs):
