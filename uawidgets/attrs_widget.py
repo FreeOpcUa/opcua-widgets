@@ -246,7 +246,7 @@ class MyDelegate(QStyledItemDelegate):
 def data_type_to_string(dv):
     # a bit too complex, we could just display browse name of node but it requires a query
     if isinstance(dv.Value.Value.Identifier, int) and dv.Value.Value.Identifier < 63:
-        string = ua.DataType_to_VariantType(dv.Value.Value).name
+        string = ua.datatype_to_varianttype(dv.Value.Value).name
     elif dv.Value.Value.Identifier in ua.ObjectIdNames:
         string = ua.ObjectIdNames[dv.Value.Value.Identifier]
     else:
