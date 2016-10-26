@@ -41,11 +41,11 @@ class NewNodeBaseDialog(QDialog):
         self.layout.addWidget(self.nodeidCheckBox)
         self.nodeidLineEdit = QLineEdit(self)
         self.nodeidLineEdit.setMinimumWidth(80)
-        self.nodeidLineEdit.setText(self.settings.value("last_nodeid_type", "i=20000"))
+        self.nodeidLineEdit.setText(self.settings.value("last_nodeid_prefix", "ns={};i=20000".format(nsidx)))
         self.layout.addWidget(self.nodeidLineEdit)
 
         # restore check box state from settings
-        if self.settings.value("last_auto_nodeid_state", True) == "false":
+        if self.settings.value("last_node_widget_vis", False) == "true":
             self.nodeidCheckBox.setChecked(False)
             self.nodeidLineEdit.show()
         else:
@@ -61,8 +61,9 @@ class NewNodeBaseDialog(QDialog):
 
     def _store_state(self):
         self.settings.setValue("last_namespace", self.nsComboBox.currentIndex())
-        self.settings.setValue("last_auto_nodeid_state", self.nodeidCheckBox.isChecked())
-        self.settings.setValue("last_nodeid_type", self.nodeidLineEdit.text()[0:2])
+        self.settings.setValue("last_node_widget_vis", not self.nodeidCheckBox.isChecked())
+        ns_nt = self.nodeidLineEdit.text().split(';')
+        self.settings.setValue("last_nodeid_prefix", ns_nt[0] + ';' + ns_nt[1][0:2])
 
     def _show_nodeid(self, val):
         if val:
@@ -78,8 +79,7 @@ class NewNodeBaseDialog(QDialog):
         if self.nodeidCheckBox.isChecked():
             nodeid = ua.NodeId(namespaceidx=ns)
         else:
-            ns_nodeid = "ns={};".format(ns) + self.nodeidLineEdit.text()
-            nodeid = ua.NodeId.from_string(ns_nodeid)
+            nodeid = ua.NodeId.from_string(self.nodeidLineEdit.text())
         return nodeid, bname
 
     def get_args(self):
