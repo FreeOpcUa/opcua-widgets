@@ -148,24 +148,28 @@ class AttrsWidget(QObject):
         self.model.appendRow([name_item, vitem, QStandardItem(dv.Value.VariantType.name)])
 
     def _show_value_attr(self, attr, dv):
-        items = self._show_val(self.model, "Value", dv.Value.Value, dv.Value.VariantType)
+        name_item = QStandardItem("Value")
+        vitem = QStandardItem()
+        row = [name_item, vitem, QStandardItem(dv.Value.VariantType.name)]
+        items = self._show_val(name_item, "Value", dv.Value.Value, dv.Value.VariantType)
         items[1].setData((attr, dv), Qt.UserRole)
         #if self._timestamps:
-            #self._show_timestamps(items[0], dv)
+        self.model.appendRow(row)
+        self._show_timestamps(name_item, dv)
 
     def _show_val(self, parent, name, val, vtype):
         name_item = QStandardItem(name)
         vitem = QStandardItem()
         row = [name_item, vitem, QStandardItem(vtype.name)]
-        parent.appendRow(row)
         if isinstance(val, (list, tuple)):
-            vitem.setText("List of " + vtype.name)
+            row[2].setText("List of " + vtype.name)
             for idx, element in enumerate(val):
                 self._show_val(name_item, str(idx), element, vtype)
         elif vtype == ua.VariantType.ExtensionObject:
             self._show_ext_obj(name_item, val)
         else:
             vitem.setText(val_to_string(val))
+        parent.appendRow(row)
         return row
 
     def _show_ext_obj(self, item, val):
@@ -179,8 +183,8 @@ class AttrsWidget(QObject):
             self._show_val(item, att_name, member_val, attr)
 
     def _show_timestamps(self, item, dv):
-        while item.hasChildren():
-            self.model.removeRow(0, item.index())
+        #while item.hasChildren():
+            #self.model.removeRow(0, item.index())
         string = val_to_string(dv.ServerTimestamp)
         item.appendRow([QStandardItem("Server Timestamp"), QStandardItem(string), QStandardItem(ua.VariantType.DateTime.name)])
         string = val_to_string(dv.SourceTimestamp)
