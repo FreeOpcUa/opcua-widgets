@@ -159,25 +159,21 @@ class AttrsWidget(QObject):
         row = [name_item, vitem, QStandardItem(vtype.name)]
         parent.appendRow(row)
         if isinstance(val, (list, tuple)):
-            print(val, "is list")
             for idx, element in enumerate(val):
-                print("Adding", idx, element, vtype)
                 self._show_val(name_item, str(idx), element, vtype)
         elif vtype == ua.VariantType.ExtensionObject:
             self._show_ext_obj(name_item, val)
         else:
-            print("Set Text", val)
             vitem.setText(val_to_string(val))
-            print("DEBUG", vitem.text())
         return row
 
     def _show_ext_obj(self, item, val):
-        body_it = QStandardItem("Body")
-        item.appendRow([body_it, QStandardItem(), QStandardItem()])
-        for att_name, att_type in dv.Value.Value.ua_types:
-            val_str = variant_to_string(getattr(dv.Value))
-            item.appendRow([QStandardItem(att_name), QStandardItem(val_str), QStandardItem(att_type)])
-
+        ext_it = QStandardItem("ExtensionObject: " + val.__class__.__name__)
+        item.appendRow([ext_it, QStandardItem(), QStandardItem()])
+        for att_name, att_type in val.ua_types.items():
+            member_val = getattr(val, att_name)
+            attr = getattr(ua.VariantType, att_type)
+            self._show_val(ext_it, att_name, member_val, attr)
 
     def _show_timestamps(self, item, dv):
         while item.hasChildren():
