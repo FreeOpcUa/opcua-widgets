@@ -27,7 +27,7 @@ class BitEditor(QDialog):
             box = QCheckBox(el.name, parent)
             layout.addWidget(box)
             self.boxes.append(box)
-            if ua.test_bit(val, el.value):
+            if ua.ua_binary.test_bit(val, el.value):
                 box.setChecked(True)
             else:
                 box.setChecked(False)
@@ -36,7 +36,7 @@ class BitEditor(QDialog):
         data = 0
         for box in self.boxes:
             if box.isChecked():
-                data = ua.set_bit(data, self.enum[box.text()].value)
+                data = ua.ua_binary.set_bit(data, self.enum[box.text()].value)
         return data
 
 
@@ -76,6 +76,12 @@ class AttrsWidget(QObject):
         self.settings.setValue("attrs_widget", self.view.header().saveState())
 
     def _item_changed(self, item):
+        print("DATACHANGED DISABLED")
+        return
+        data = item.data(Qt.UserRole)
+        if data is None:
+            print("Error item has no data", item.text())
+            return
         attr, dv = item.data(Qt.UserRole)
         if attr == ua.AttributeIds.Value:
             dv.SourceTimestamp = datetime.now()
@@ -120,23 +126,58 @@ class AttrsWidget(QObject):
     def _show_attrs(self):
         attrs = self.get_all_attrs()
         for attr, dv in attrs:
-            if attr == ua.AttributeIds.DataType:
-                string = data_type_to_string(dv)
-            elif attr in (ua.AttributeIds.AccessLevel,
-                          ua.AttributeIds.UserAccessLevel,
-                          ua.AttributeIds.WriteMask,
-                          ua.AttributeIds.UserWriteMask,
-                          ua.AttributeIds.EventNotifier):
-                string = enum_to_string(attr, dv)
+            if attr == ua.AttributeIds.Value:
+                self._show_value_attr(attr, dv)
             else:
-                string = variant_to_string(dv.Value)
-            name_item = QStandardItem(attr.name)
-            vitem = QStandardItem(string)
-            vitem.setData((attr, dv), Qt.UserRole)
-            self.model.appendRow([name_item, vitem, QStandardItem(dv.Value.VariantType.name)])
+                self._show_attr(attr, dv)
 
-            if self._timestamps and attr == ua.AttributeIds.Value:
-                self._show_timestamps(name_item, dv)
+    def _show_attr(self, attr, dv):
+        if attr == ua.AttributeIds.DataType:
+            string = data_type_to_string(dv)
+        elif attr in (ua.AttributeIds.AccessLevel,
+                      ua.AttributeIds.UserAccessLevel,
+                      ua.AttributeIds.WriteMask,
+                      ua.AttributeIds.UserWriteMask,
+                      ua.AttributeIds.EventNotifier):
+            string = enum_to_string(attr, dv)
+        else:
+            string = val_to_string(dv.Value)
+        name_item = QStandardItem(attr.name)
+        vitem = QStandardItem(string)
+        vitem.setData((attr, dv), Qt.UserRole)
+        self.model.appendRow([name_item, vitem, QStandardItem(dv.Value.VariantType.name)])
+
+    def _show_value_attr(self, attr, dv):
+        items = self._show_val(self.model, "Value", dv.Value.Value, dv.Value.VariantType)
+        items[1].setData((attr, dv), Qt.UserRole)
+        #if self._timestamps:
+            #self._show_timestamps(items[0], dv)
+
+    def _show_val(self, parent, name, val, vtype):
+        name_item = QStandardItem(name)
+        vitem = QStandardItem()
+        row = [name_item, vitem, QStandardItem(vtype.name)]
+        parent.appendRow(row)
+        if isinstance(val, (list, tuple)):
+            print(val, "is list")
+            for idx, element in enumerate(val):
+                print("Adding", idx, element, vtype)
+                self._show_val(name_item, str(idx), element, vtype)
+        elif vtype == ua.VariantType.ExtensionObject:
+            self._show_ext_obj(name_item, val)
+        else:
+            print("Set Text", val)
+            vitem.setText(val_to_string(val))
+            print("DEBUG", vitem.text())
+        return row
+
+    def _show_ext_obj(self, item, val):
+        body_it = QStandardItem("Body")
+        item.appendRow([body_it, QStandardItem(), QStandardItem()])
+        for att_name, att_type in dv.Value.Value.ua_types:
+            val_str = variant_to_string(getattr(dv.Value))
+            item.appendRow([QStandardItem(att_name), QStandardItem(val_str), QStandardItem(att_type)])
+
 
     def _show_timestamps(self, item, dv):
         while item.hasChildren():
