@@ -63,6 +63,8 @@ class AttrsWidget(QObject):
         self.model.itemChanged.connect(self._item_changed)
         self.view.header().setSectionResizeMode(0)
         self.view.header().setStretchLastSection(True)
+        self.view.expanded.connect(self._item_expanded)
+        self.view.collapsed.connect(self._item_collapsed)
 
         # Context menu
         self.view.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -74,6 +76,19 @@ class AttrsWidget(QObject):
 
     def save_state(self):
         self.settings.setValue("attrs_widget", self.view.header().saveState())
+
+    def _item_expanded(self, idx):
+        item = self.model.itemFromIndex(idx)
+        if item.data(Qt.UserRole) == "Value Line":
+            it = self.model.itemFromIndex(idx.sibling(0, 1))
+            it.setText("")
+
+    def _item_collapsed(self, idx):
+        item = self.model.itemFromIndex(idx)
+        if item.data(Qt.UserRole) == "Value Line":
+            it = self.model.itemFromIndex(idx.sibling(0, 1))
+            attr, dv = it.data(Qt.UserRole)
+            it.setText(val_to_string(dv.Value.Value))
 
     def _item_changed(self, item):
         print("DATACHANGED DISABLED")
@@ -121,7 +136,7 @@ class AttrsWidget(QObject):
         self.clear()
         if self.current_node:
             self._show_attrs()
-        self.view.expandAll()
+        self.view.expandToDepth(0)
 
     def _show_attrs(self):
         attrs = self.get_all_attrs()
@@ -148,18 +163,19 @@ class AttrsWidget(QObject):
         self.model.appendRow([name_item, vitem, QStandardItem(dv.Value.VariantType.name)])
 
     def _show_value_attr(self, attr, dv):
-        name_item = QStandardItem("Value")
+        name_item = QStandardItem("DataValue")
         vitem = QStandardItem()
-        row = [name_item, vitem, QStandardItem(dv.Value.VariantType.name)]
         items = self._show_val(name_item, "Value", dv.Value.Value, dv.Value.VariantType)
+        items[0].setData("Value Line", Qt.UserRole)
         items[1].setData((attr, dv), Qt.UserRole)
-        #if self._timestamps:
+        row = [name_item, vitem, QStandardItem(dv.Value.VariantType.name)]
         self.model.appendRow(row)
         self._show_timestamps(name_item, dv)
 
-    def _show_val(self, parent, name, val, vtype):
+    def _show_val(self, parent, name, val, vtype, root=False):
         name_item = QStandardItem(name)
         vitem = QStandardItem()
+        vitem.setText(val_to_string(val))
         row = [name_item, vitem, QStandardItem(vtype.name)]
         if isinstance(val, (list, tuple)):
             row[2].setText("List of " + vtype.name)
@@ -168,7 +184,8 @@ class AttrsWidget(QObject):
         elif vtype == ua.VariantType.ExtensionObject:
             self._show_ext_obj(name_item, val)
         else:
-            vitem.setText(val_to_string(val))
+            pass
+            #vitem.setText(val_to_string(val))
         parent.appendRow(row)
         return row
 
