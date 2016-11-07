@@ -56,7 +56,8 @@ class AttributeData(_Data):
 
 
 class MemberData(_Data):
-    def __init__(self, name, value, uatype):
+    def __init__(self, obj, name, value, uatype):
+        self.obj = obj
         self.name = name
         self.value = value
         self.uatype = uatype
@@ -66,7 +67,7 @@ class ListData(_Data):
     def __init__(self, mylist, idx, val, uatype):
         self.mylist = mylist
         self.idx = idx
-        self.val = val
+        self.value = val
         self.uatype = uatype
 
 
@@ -126,29 +127,6 @@ class AttrsWidget(QObject):
         it.setText(val_to_string(data.value))
 
     def _item_changed(self, item):
-        print("ITEM CHANGED DISABLED")
-        return
-        data = item.data(Qt.UserRole)
-        if data is None:
-            print("Error item has no data", item.text())
-            return
-        if isinstance(data, AttributeData):
-            if data.attr == ua.AttributeIds.Value:
-                print("Should update timestamps!!!")
-            self._write_attr(data)
-        elif isinstance(data, MemberData):
-            #it = self.model.item(item.index().row(), 0)
-            #self._show_timestamps(it, dv)
-            print("ITEM", item.text(), data)
-            print("ITEM PARENT", item.parent().text(), item.data(Qt.UserRole))
-            print("DATA is ", data)
-        elif isinstance(data, ListData):
-            parent = item
-            while parent.text() != "Value":
-                parent = item.parent()
-            it = self.model.itemFromIndex(parent.index().sibling(0, 1))
-            data = it.data(Qt.UserRole)
-            self._write_attr(data)
         self.modified.emit()
 
     def showContextMenu(self, position):
@@ -213,17 +191,17 @@ class AttrsWidget(QObject):
     def _show_value_attr(self, attr, dv):
         name_item = QStandardItem("Value")
         vitem = QStandardItem()
-        items = self._show_val(name_item, "Value", dv.Value.Value, dv.Value.VariantType)
+        items = self._show_val(name_item, None, "Value", dv.Value.Value, dv.Value.VariantType)
         items[1].setData(AttributeData(attr, dv.Value.Value, dv.Value.VariantType), Qt.UserRole)
         row = [name_item, vitem, QStandardItem(dv.Value.VariantType.name)]
         self.model.appendRow(row)
         self._show_timestamps(name_item, dv)
 
-    def _show_val(self, parent, name, val, vtype):
+    def _show_val(self, parent, obj, name, val, vtype):
         name_item = QStandardItem(name)
         vitem = QStandardItem()
         vitem.setText(val_to_string(val))
-        vitem.setData(MemberData(name, val, vtype), Qt.UserRole)
+        vitem.setData(MemberData(obj, name, val, vtype), Qt.UserRole)
         row = [name_item, vitem, QStandardItem(vtype.name)]
         # if we have a list or extension object we display children
         if isinstance(val, list):
@@ -247,7 +225,6 @@ class AttrsWidget(QObject):
         return row
     
     def refresh_list(self, parent, mylist, vtype):
-        print("REFREHS")
         while parent.hasChildren():
             self.model.removeRow(0, parent.index())
         self._show_list(parent, mylist, vtype)
@@ -257,7 +234,7 @@ class AttrsWidget(QObject):
         for att_name, att_type in val.ua_types.items():
             member_val = getattr(val, att_name)
             attr = getattr(ua.VariantType, att_type)
-            self._show_val(item, att_name, member_val, attr)
+            self._show_val(item, val, att_name, member_val, attr)
 
     def _show_timestamps(self, item, dv):
         #while item.hasChildren():
@@ -354,21 +331,20 @@ class MyDelegate(QStyledItemDelegate):
         self._write_attr(attr_data)
 
     def _set_member_data(self, data, editor, model, idx):
-        members = []
-        parent_idx = idx
-        while True:
-            parent_idx, parent_data = self._get_parent_data(parent_idx, model)
-            if isinstance(parent_data, MemberData):
-                members.append(parent_data.name)
-            else:
-                break
-        print("MEMBERS", members)
-        val = parent_data.value
-        for name in reversed(members):
-            val = getattr(val, name)
-        text = editor.text()
-        setattr(val, data.name, string_to_val(text, data.uatype))
-        model.setItemData(idx, {Qt.DisplayRole: text, Qt.UserRole: data})
+        val = string_to_val(editor.text(), data.uatype)
+        data.value = val
+        model.setItemData(idx, {Qt.DisplayRole: editor.text(), Qt.UserRole: data})
+        setattr(data.obj, data.name, val)
+        attr_data = self._get_attr_data(idx, model)
+        self._write_attr(attr_data)
+
+    def _set_obj_member_value(self, obj, path, val, uatype):
+        print("setting path ", path, " of object", obj, " to value", val, " of type ", uatype)
+        o = obj
+        for name in reversed(path[:-1]):
+            o = getattr(o, name)
+        setattr(o, path[-1], val)
+        return obj
 
     def _get_attr_data(self, idx, model):
         while True:
@@ -412,9 +388,7 @@ class MyDelegate(QStyledItemDelegate):
             data.value = string_to_val(text, data.uatype)
         model.setItemData(idx, {Qt.DisplayRole: text, Qt.UserRole: data})
         self._write_attr(data)
-        print("LIST test", data.value)
         if isinstance(data.value, list):
-            print("LIST", data.value)
             # we need to refresh children
             item = self.attrs_widget.model.itemFromIndex(idx.sibling(0, 0))
             self.attrs_widget.refresh_list(item, data.value, data.uatype)
@@ -427,7 +401,6 @@ class MyDelegate(QStyledItemDelegate):
         except Exception as ex:
             self.error.emit(ex)
             raise
-
 
 
 def data_type_to_string(dtype):
