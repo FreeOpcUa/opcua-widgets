@@ -109,9 +109,6 @@ class AttrsWidget(QObject):
         self.settings.setValue("attrs_widget", self.view.header().saveState())
 
     def _item_expanded(self, idx):
-        #item = self.model.itemFromIndex(idx)
-        #print(item.
-        #if item.data(Qt.UserRole) == "Value Line":
         if not idx.parent().isValid():
             # only for value attributes which a re childs
             # maybe add more tests
@@ -120,8 +117,6 @@ class AttrsWidget(QObject):
         it.setText("")
 
     def _item_collapsed(self, idx):
-        #item = self.model.itemFromIndex(idx)
-        #if item.data(Qt.UserRole) == "Value Line":
         it = self.model.itemFromIndex(idx.sibling(0, 1))
         data = it.data(Qt.UserRole)
         it.setText(val_to_string(data.value))
@@ -182,7 +177,6 @@ class AttrsWidget(QObject):
             string = enum_to_string(attr, dv.Value.Value)
         else:
             string = val_to_string(dv.Value.Value)
-        print("DISPLAYING", attr.name, string)
         name_item = QStandardItem(attr.name)
         vitem = QStandardItem(string)
         vitem.setData(AttributeData(attr, dv.Value.Value, dv.Value.VariantType), Qt.UserRole)
@@ -337,14 +331,6 @@ class MyDelegate(QStyledItemDelegate):
         setattr(data.obj, data.name, val)
         attr_data = self._get_attr_data(idx, model)
         self._write_attr(attr_data)
-
-    def _set_obj_member_value(self, obj, path, val, uatype):
-        print("setting path ", path, " of object", obj, " to value", val, " of type ", uatype)
-        o = obj
-        for name in reversed(path[:-1]):
-            o = getattr(o, name)
-        setattr(o, path[-1], val)
-        return obj
 
     def _get_attr_data(self, idx, model):
         while True:
