@@ -1,11 +1,12 @@
-from datetime import datetime
+import traceback
+
 from PyQt5.QtCore import pyqtSignal, Qt, QObject, QSettings
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
-from PyQt5.QtWidgets import QApplication, QMenu, QAction, QStyledItemDelegate, QComboBox, QWidget, QVBoxLayout, QCheckBox, QDialog
+from PyQt5.QtWidgets import QApplication, QMenu, QAction, QStyledItemDelegate, QComboBox, QVBoxLayout, QCheckBox, QDialog
 
 from opcua import ua
 from opcua import Node
-from opcua.common.ua_utils import string_to_variant, variant_to_string, val_to_string
+from opcua.common.ua_utils import string_to_val, val_to_string
 
 from uawidgets.get_node_dialog import GetNodeButton
 
@@ -27,7 +28,7 @@ class BitEditor(QDialog):
             box = QCheckBox(el.name, parent)
             layout.addWidget(box)
             self.boxes.append(box)
-            if ua.test_bit(val, el.value):
+            if ua.ua_binary.test_bit(val, el.value):
                 box.setChecked(True)
             else:
                 box.setChecked(False)
@@ -36,8 +37,38 @@ class BitEditor(QDialog):
         data = 0
         for box in self.boxes:
             if box.isChecked():
-                data = ua.set_bit(data, self.enum[box.text()].value)
+                data = ua.ua_binary.set_bit(data, self.enum[box.text()].value)
         return data
+
+
+class _Data(object):
+    def is_editable(self):
+        if self.uatype != ua.VariantType.ExtensionObject:
+            return True
+        return False
+
+
+class AttributeData(_Data):
+    def __init__(self, attr, value, uatype):
+        self.attr = attr
+        self.value = value
+        self.uatype = uatype
+
+
+class MemberData(_Data):
+    def __init__(self, obj, name, value, uatype):
+        self.obj = obj
+        self.name = name
+        self.value = value
+        self.uatype = uatype
+
+
+class ListData(_Data):
+    def __init__(self, mylist, idx, val, uatype):
+        self.mylist = mylist
+        self.idx = idx
+        self.value = val
+        self.uatype = uatype
 
 
 class AttrsWidget(QObject):
@@ -63,6 +94,8 @@ class AttrsWidget(QObject):
         self.model.itemChanged.connect(self._item_changed)
         self.view.header().setSectionResizeMode(0)
         self.view.header().setStretchLastSection(True)
+        self.view.expanded.connect(self._item_expanded)
+        self.view.collapsed.connect(self._item_collapsed)
 
         # Context menu
         self.view.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -75,18 +108,20 @@ class AttrsWidget(QObject):
     def save_state(self):
         self.settings.setValue("attrs_widget", self.view.header().saveState())
 
+    def _item_expanded(self, idx):
+        if not idx.parent().isValid():
+            # only for value attributes which a re childs
+            # maybe add more tests
+            return
+        it = self.model.itemFromIndex(idx.sibling(0, 1))
+        it.setText("")
+
+    def _item_collapsed(self, idx):
+        it = self.model.itemFromIndex(idx.sibling(0, 1))
+        data = it.data(Qt.UserRole)
+        it.setText(val_to_string(data.value))
+
     def _item_changed(self, item):
-        attr, dv = item.data(Qt.UserRole)
-        if attr == ua.AttributeIds.Value:
-            dv.SourceTimestamp = datetime.now()
-        try:
-            self.current_node.set_attribute(attr, dv)
-        except Exception as ex:
-            self.error.emit(ex)
-            raise
-        if attr == ua.AttributeIds.Value:
-            it = self.model.item(item.index().row(), 0)
-            self._show_timestamps(it, dv)
         self.modified.emit()
 
     def showContextMenu(self, position):
@@ -115,32 +150,89 @@ class AttrsWidget(QObject):
         self.clear()
         if self.current_node:
             self._show_attrs()
-        self.view.expandAll()
+        self.view.expandToDepth(0)
 
     def _show_attrs(self):
         attrs = self.get_all_attrs()
         for attr, dv in attrs:
-            if attr == ua.AttributeIds.DataType:
-                string = data_type_to_string(dv)
-            elif attr in (ua.AttributeIds.AccessLevel,
-                          ua.AttributeIds.UserAccessLevel,
-                          ua.AttributeIds.WriteMask,
-                          ua.AttributeIds.UserWriteMask,
-                          ua.AttributeIds.EventNotifier):
-                string = enum_to_string(attr, dv)
-            else:
-                string = variant_to_string(dv.Value)
-            name_item = QStandardItem(attr.name)
-            vitem = QStandardItem(string)
-            vitem.setData((attr, dv), Qt.UserRole)
-            self.model.appendRow([name_item, vitem, QStandardItem(dv.Value.VariantType.name)])
+            try:
+                # crashing here put down the application, we do not want that
+                # so we use try/except
+                if attr == ua.AttributeIds.Value:
+                    self._show_value_attr(attr, dv)
+                else:
+                    self._show_attr(attr, dv)
+            except Exception as ex:
+                traceback.print_exc()
+                self.error.emit(ex)
 
-            if self._timestamps and attr == ua.AttributeIds.Value:
-                self._show_timestamps(name_item, dv)
+    def _show_attr(self, attr, dv):
+        if attr == ua.AttributeIds.DataType:
+            string = data_type_to_string(dv.Value.Value)
+        elif attr in (ua.AttributeIds.AccessLevel,
+                      ua.AttributeIds.UserAccessLevel,
+                      ua.AttributeIds.WriteMask,
+                      ua.AttributeIds.UserWriteMask,
+                      ua.AttributeIds.EventNotifier):
+            string = enum_to_string(attr, dv.Value.Value)
+        else:
+            string = val_to_string(dv.Value.Value)
+        name_item = QStandardItem(attr.name)
+        vitem = QStandardItem(string)
+        vitem.setData(AttributeData(attr, dv.Value.Value, dv.Value.VariantType), Qt.UserRole)
+        self.model.appendRow([name_item, vitem, QStandardItem(dv.Value.VariantType.name)])
+
+    def _show_value_attr(self, attr, dv):
+        name_item = QStandardItem("Value")
+        vitem = QStandardItem()
+        items = self._show_val(name_item, None, "Value", dv.Value.Value, dv.Value.VariantType)
+        items[1].setData(AttributeData(attr, dv.Value.Value, dv.Value.VariantType), Qt.UserRole)
+        row = [name_item, vitem, QStandardItem(dv.Value.VariantType.name)]
+        self.model.appendRow(row)
+        self._show_timestamps(name_item, dv)
+
+    def _show_val(self, parent, obj, name, val, vtype):
+        name_item = QStandardItem(name)
+        vitem = QStandardItem()
+        vitem.setText(val_to_string(val))
+        vitem.setData(MemberData(obj, name, val, vtype), Qt.UserRole)
+        row = [name_item, vitem, QStandardItem(vtype.name)]
+        # if we have a list or extension object we display children
+        if isinstance(val, list):
+            row[2].setText("List of " + vtype.name)
+            self._show_list(name_item, val, vtype)
+        elif vtype == ua.VariantType.ExtensionObject:
+            self._show_ext_obj(name_item, val)
+        parent.appendRow(row)
+        return row
+
+    def _show_list(self, parent, mylist, vtype):
+        for idx, val in enumerate(mylist):
+            name_item = QStandardItem(str(idx))
+            vitem = QStandardItem()
+            vitem.setText(val_to_string(val))
+            vitem.setData(ListData(mylist, idx, val, vtype), Qt.UserRole)
+            row = [name_item, vitem, QStandardItem(vtype.name)]
+            parent.appendRow(row)
+            if vtype == ua.VariantType.ExtensionObject:
+                self._show_ext_obj(name_item, val)
+        return row
+    
+    def refresh_list(self, parent, mylist, vtype):
+        while parent.hasChildren():
+            self.model.removeRow(0, parent.index())
+        self._show_list(parent, mylist, vtype)
+
+    def _show_ext_obj(self, item, val):
+        item.setText(item.text() + ": " + val.__class__.__name__)
+        for att_name, att_type in val.ua_types.items():
+            member_val = getattr(val, att_name)
+            attr = getattr(ua.VariantType, att_type)
+            self._show_val(item, val, att_name, member_val, attr)
 
     def _show_timestamps(self, item, dv):
-        while item.hasChildren():
-            self.model.removeRow(0, item.index())
+        #while item.hasChildren():
+            #self.model.removeRow(0, item.index())
         string = val_to_string(dv.ServerTimestamp)
         item.appendRow([QStandardItem("Server Timestamp"), QStandardItem(string), QStandardItem(ua.VariantType.DateTime.name)])
         string = val_to_string(dv.SourceTimestamp)
@@ -174,34 +266,38 @@ class MyDelegate(QStyledItemDelegate):
         if idx.column() != 1:
             return None
         item = self.attrs_widget.model.itemFromIndex(idx)
-        attr, dv = item.data(Qt.UserRole)
-        text = item.text()
-        if attr == ua.AttributeIds.NodeId:
+        data = item.data(Qt.UserRole)
+        if not data.is_editable():
             return None
-        if dv.Value.VariantType == ua.VariantType.Boolean:
+        text = item.text()
+        if isinstance(data, (ListData, MemberData)):
+            return QStyledItemDelegate.createEditor(self, parent, option, idx)
+        elif data.attr == ua.AttributeIds.NodeId:
+            return None
+        elif data.uatype == ua.VariantType.Boolean:
             combo = QComboBox(parent)
             combo.addItem("True")
             combo.addItem("False")
             combo.setCurrentText(text)
             return combo
-        elif attr == ua.AttributeIds.NodeClass:
+        elif data.attr == ua.AttributeIds.NodeClass:
             combo = QComboBox(parent)
             for nclass in ua.NodeClass:
                 combo.addItem(nclass.name)
             combo.setCurrentText(text)
             return combo
-        elif attr == ua.AttributeIds.DataType:
+        elif data.attr == ua.AttributeIds.DataType:
             nodeid = getattr(ua.ObjectIds, text)
             node = Node(self.attrs_widget.current_node.server, nodeid)
             startnode = Node(self.attrs_widget.current_node.server, ua.ObjectIds.BaseDataType)
             button = GetNodeButton(parent, node, startnode)
             return button
-        elif attr in (ua.AttributeIds.AccessLevel,
-                      ua.AttributeIds.UserAccessLevel,
-                      ua.AttributeIds.WriteMask,
-                      ua.AttributeIds.UserWriteMask,
-                      ua.AttributeIds.EventNotifier):
-            return BitEditor(parent, attr, dv.Value.Value)
+        elif data.attr in (ua.AttributeIds.AccessLevel,
+                           ua.AttributeIds.UserAccessLevel,
+                           ua.AttributeIds.WriteMask,
+                           ua.AttributeIds.UserWriteMask,
+                           ua.AttributeIds.EventNotifier):
+            return BitEditor(parent, data.attr, data.value)
         else:
             return QStyledItemDelegate.createEditor(self, parent, option, idx)
 
@@ -209,48 +305,98 @@ class MyDelegate(QStyledItemDelegate):
         #pass
 
     def setModelData(self, editor, model, idx):
-        #item = self.attrs_widget.model.itemFromIndex(idx)
-        attr, dv = model.data(idx, Qt.UserRole)
-        if attr == ua.AttributeIds.NodeClass:
-            dv.Value.Value = ua.NodeClass[editor.currentText()]
+        # if user is setting a value on a null variant, try using the nodes datatype instead
+        data = model.data(idx, Qt.UserRole)
+
+        if isinstance(data, AttributeData):
+            self._set_attribute_data(data, editor, model, idx)
+        elif isinstance(data, MemberData):
+            self._set_member_data(data, editor, model, idx)
+        elif isinstance(data, ListData):
+            self._set_list_data(data, editor, model, idx)
+        else:
+            print("Error while setting model data, data is ", data)
+
+    def _set_list_data(self, data, editor, model, idx):
+        text = editor.text()
+        data.mylist[data.idx] = string_to_val(text, data.uatype)
+        model.setItemData(idx, {Qt.DisplayRole: text, Qt.UserRole: data})
+        attr_data = self._get_attr_data(idx, model)
+        self._write_attr(attr_data)
+
+    def _set_member_data(self, data, editor, model, idx):
+        val = string_to_val(editor.text(), data.uatype)
+        data.value = val
+        model.setItemData(idx, {Qt.DisplayRole: editor.text(), Qt.UserRole: data})
+        setattr(data.obj, data.name, val)
+        attr_data = self._get_attr_data(idx, model)
+        self._write_attr(attr_data)
+
+    def _get_attr_data(self, idx, model):
+        while True:
+            idx = idx.parent()
+            it = model.itemFromIndex(idx.sibling(0, 1))
+            data = it.data(Qt.UserRole)
+            if isinstance(data, AttributeData):
+                return data
+
+    def _get_parent_data(self, idx, model):
+        parent_idx = idx.parent()
+        it = model.itemFromIndex(parent_idx.sibling(0, 1))
+        return parent_idx, it.data(Qt.UserRole)
+
+    def _set_attribute_data(self, data, editor, model, idx):
+        if data.uatype is ua.VariantType.Null:
+            try:
+                data.uatype = self.attrs_widget.current_node.get_data_type_as_variant_type()
+            except Exception as ex:
+                self.error.emit(ex)
+                raise
+
+        if data.attr == ua.AttributeIds.NodeClass:
+            data.value = ua.NodeClass[editor.currentText()]
             text = editor.currentText()
-        elif attr == ua.AttributeIds.DataType:
-            dv.Value.Value = editor.get_node().nodeid
-            text = data_type_to_string(dv)
-        elif attr in (ua.AttributeIds.AccessLevel,
-                      ua.AttributeIds.UserAccessLevel,
-                      ua.AttributeIds.WriteMask,
-                      ua.AttributeIds.UserWriteMask,
-                      ua.AttributeIds.EventNotifier):
-            dv.Value.Value = editor.get_byte()
-            text = enum_to_string(attr, dv)
+        elif data.attr == ua.AttributeIds.DataType:
+            data.value = editor.get_node().nodeid
+            text = data_type_to_string(data.value)
+        elif data.attr in (ua.AttributeIds.AccessLevel,
+                           ua.AttributeIds.UserAccessLevel,
+                           ua.AttributeIds.WriteMask,
+                           ua.AttributeIds.UserWriteMask,
+                           ua.AttributeIds.EventNotifier):
+            data.value = editor.get_byte()
+            text = enum_to_string(data.attr, data.value)
         else:
             if isinstance(editor, QComboBox):
                 text = editor.currentText()
             else:
                 text = editor.text()
+            data.value = string_to_val(text, data.uatype)
+        model.setItemData(idx, {Qt.DisplayRole: text, Qt.UserRole: data})
+        self._write_attr(data)
+        if isinstance(data.value, list):
+            # we need to refresh children
+            item = self.attrs_widget.model.itemFromIndex(idx.sibling(0, 0))
+            self.attrs_widget.refresh_list(item, data.value, data.uatype)
 
-            try:
-                # if user is setting a value on a null variant, try using the nodes datatype instead
-                if dv.Value.VariantType is ua.VariantType.Null:
-                    dtype = self.attrs_widget.current_node.get_data_type_as_variant_type()
-                    dv.Value = string_to_variant(text, dtype)
-                else:
-                    dv.Value = string_to_variant(text, dv.Value.VariantType)
-            except Exception as ex:
-                self.error.emit(ex)
-                raise
-        model.setItemData(idx, {Qt.DisplayRole: text, Qt.UserRole: (attr, dv)})
+    def _write_attr(self, data):
+        dv = ua.DataValue(ua.Variant(data.value, varianttype=data.uatype))
+        try:
+            print("Writing ", dv, " to ", data.attr)
+            self.attrs_widget.current_node.set_attribute(data.attr, dv)
+        except Exception as ex:
+            self.error.emit(ex)
+            raise
 
 
-def data_type_to_string(dv):
+def data_type_to_string(dtype):
     # a bit too complex, we could just display browse name of node but it requires a query
-    if isinstance(dv.Value.Value.Identifier, int) and dv.Value.Value.Identifier < 63:
-        string = ua.datatype_to_varianttype(dv.Value.Value).name
-    elif dv.Value.Value.Identifier in ua.ObjectIdNames:
-        string = ua.ObjectIdNames[dv.Value.Value.Identifier]
+    if isinstance(dtype.Identifier, int) and dtype.Identifier < 63:
+        string = ua.datatype_to_varianttype(dtype).name
+    elif dtype.Identifier in ua.ObjectIdNames:
+        string = ua.ObjectIdNames[dtype.Identifier]
     else:
-        string = dv.Value.Value.to_string()
+        string = dtype.to_string()
     return string
 
 
@@ -261,7 +407,7 @@ def attr_to_enum(attr):
     return getattr(ua, attr_name)
 
 
-def enum_to_string(attr, dv):
+def enum_to_string(attr, val):
     attr_enum = attr_to_enum(attr)
-    string = ", ".join([e.name for e in attr_enum.parse_bitfield(dv.Value.Value)])
+    string = ", ".join([e.name for e in attr_enum.parse_bitfield(val)])
     return string
