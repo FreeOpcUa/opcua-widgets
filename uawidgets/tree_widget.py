@@ -53,6 +53,18 @@ class TreeWidget(QObject):
             it = it.parent()
         return path
 
+    def update_browse_name_current_item(self, bname):
+        idx = self.view.currentIndex()
+        idx = idx.sibling(idx.row(), 1)
+        it = self.model.itemFromIndex(idx)
+        it.setText(bname.to_string())
+
+    def update_display_name_current_item(self, dname):
+        idx = self.view.currentIndex()
+        idx = idx.sibling(idx.row(), 0)
+        it = self.model.itemFromIndex(idx)
+        it.setText(dname.Text.decode())
+
     def reload_current(self):
         idx = self.view.currentIndex()
         idx = idx.sibling(idx.row(), 0)

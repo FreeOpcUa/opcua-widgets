@@ -74,7 +74,7 @@ class ListData(_Data):
 class AttrsWidget(QObject):
 
     error = pyqtSignal(Exception)
-    modified = pyqtSignal()
+    attr_written = pyqtSignal(ua.AttributeIds, ua.DataValue)
 
     def __init__(self, view, show_timestamps=True):
         QObject.__init__(self, view)
@@ -82,6 +82,7 @@ class AttrsWidget(QObject):
         self._timestamps = show_timestamps
         delegate = MyDelegate(self.view, self)
         delegate.error.connect(self.error.emit)
+        delegate.attr_written.connect(self.attr_written.emit)
         self.settings = QSettings()
         self.view.setItemDelegate(delegate)
         self.model = QStandardItemModel()
@@ -91,7 +92,6 @@ class AttrsWidget(QObject):
             self.view.header().restoreState(state)
         self.view.setModel(self.model)
         self.current_node = None
-        self.model.itemChanged.connect(self._item_changed)
         self.view.header().setSectionResizeMode(0)
         self.view.header().setStretchLastSection(True)
         self.view.expanded.connect(self._item_expanded)
@@ -120,9 +120,6 @@ class AttrsWidget(QObject):
         it = self.model.itemFromIndex(idx.sibling(0, 1))
         data = it.data(Qt.UserRole)
         it.setText(val_to_string(data.value))
-
-    def _item_changed(self, item):
-        self.modified.emit()
 
     def showContextMenu(self, position):
         item = self.get_current_item()
@@ -257,6 +254,7 @@ class AttrsWidget(QObject):
 class MyDelegate(QStyledItemDelegate):
 
     error = pyqtSignal(Exception)
+    attr_written = pyqtSignal(ua.AttributeIds, ua.DataValue)
 
     def __init__(self, parent, attrs_widget):
         QStyledItemDelegate.__init__(self, parent)
@@ -387,6 +385,8 @@ class MyDelegate(QStyledItemDelegate):
         except Exception as ex:
             self.error.emit(ex)
             raise
+        else:
+            self.attr_written.emit(data.attr, dv)
 
 
 def data_type_to_string(dtype):
