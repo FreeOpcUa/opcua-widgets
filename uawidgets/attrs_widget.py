@@ -1,4 +1,4 @@
-import traceback
+import logging
 
 from PyQt5.QtCore import pyqtSignal, Qt, QObject, QSettings
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
@@ -9,6 +9,9 @@ from opcua import Node
 from opcua.common.ua_utils import string_to_val, val_to_string
 
 from uawidgets.get_node_dialog import GetNodeButton
+
+
+logger = logging.getLogger(__name__)
 
 
 class BitEditor(QDialog):
@@ -153,14 +156,13 @@ class AttrsWidget(QObject):
         attrs = self.get_all_attrs()
         for attr, dv in attrs:
             try:
-                # crashing here put down the application, we do not want that
-                # so we use try/except
+                # try/except to show as many attributes as possible
                 if attr == ua.AttributeIds.Value:
                     self._show_value_attr(attr, dv)
                 else:
                     self._show_attr(attr, dv)
             except Exception as ex:
-                traceback.print_exc()
+                logger.exception("Exception while displaying attribute %s with value %s for node %s", attr, dv, self.current_node)
                 self.error.emit(ex)
 
     def _show_attr(self, attr, dv):
@@ -238,11 +240,7 @@ class AttrsWidget(QObject):
 
     def get_all_attrs(self):
         attrs = [attr for attr in ua.AttributeIds]
-        try:
-            dvs = self.current_node.get_attributes(attrs)
-        except Exception as ex:
-            self.error.emit(ex)
-            raise
+        dvs = self.current_node.get_attributes(attrs)
         res = []
         for idx, dv in enumerate(dvs):
             if dv.StatusCode.is_good():
@@ -313,7 +311,7 @@ class MyDelegate(QStyledItemDelegate):
         elif isinstance(data, ListData):
             self._set_list_data(data, editor, model, idx)
         else:
-            print("Error while setting model data, data is ", data)
+            logger.warning("Error while setting model data, data is %s", data)
 
     def _set_list_data(self, data, editor, model, idx):
         text = editor.text()
@@ -348,6 +346,7 @@ class MyDelegate(QStyledItemDelegate):
             try:
                 data.uatype = self.attrs_widget.current_node.get_data_type_as_variant_type()
             except Exception as ex:
+                logger.exception("Could get primitive type of variable %s", self.attrs_widget.current_node)
                 self.error.emit(ex)
                 raise
 
@@ -380,11 +379,11 @@ class MyDelegate(QStyledItemDelegate):
     def _write_attr(self, data):
         dv = ua.DataValue(ua.Variant(data.value, varianttype=data.uatype))
         try:
-            print("Writing ", dv, " to ", data.attr)
+            self.logger.warning("Writing %s to %s", dv, data.attr)
             self.attrs_widget.current_node.set_attribute(data.attr, dv)
         except Exception as ex:
+            self.logger.exception("Exception while writing %s to %s", dv, data.attr)
             self.error.emit(ex)
-            raise
         else:
             self.attr_written.emit(data.attr, dv)
 
