@@ -15,14 +15,12 @@ class TreeWidget(QObject):
         self.view = view
         self.model = TreeViewModel()
         self.model.clear()  # FIXME: do we need this?
-        #self.model.error.connect(lambda x: self.error.emit(x))
         self.model.error.connect(self.error)
         self.view.setModel(self.model)
         #self.view.setUniformRowHeights(True)
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.header().setSectionResizeMode(3)
         self.view.header().setStretchLastSection(True)
-        #self.view.resizeColumnsToContents()
 
     def clear(self):
         self.model.clear()
@@ -96,8 +94,7 @@ class TreeWidget(QObject):
         idx = idx.sibling(idx.row(), 0)
         it = self.model.itemFromIndex(idx)
         if not it:
-            self.error.emit("No node selected")
-            raise RuntimeError("No Node Selected")
+            return None
         node = it.data()
         if not node:
             self.error.emit("Item does not contain node data, report!")
