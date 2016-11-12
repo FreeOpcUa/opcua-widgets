@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import QPushButton, QComboBox, QLabel, QLineEdit, QHBoxLayo
 
 from opcua import ua
 from opcua.common.ua_utils import string_to_variant
-from opcua.common.ua_utils import dtype_to_vtype
+from opcua.common.ua_utils import data_type_to_variant_type
 
 from uawidgets.get_node_dialog import GetNodeButton
 
@@ -133,8 +133,12 @@ class NewUaVariableDialog(NewNodeBaseDialog):
         nodeid, bname = self.get_nodeid_and_bname()
         dtype = self.dataTypeButton.get_node()
         self.settings.setValue("last_datatype", dtype.nodeid.to_string())
-        vtype = dtype_to_vtype(self.server, dtype)
-        var = string_to_variant(self.valLineEdit.text(), vtype)
+        vtype = data_type_to_variant_type(dtype)
+        if vtype == ua.VariantType.ExtensionObject:
+            # we currently cannot construct a complex object from a string
+            var = ua.Variant()
+        else:
+            var = string_to_variant(self.valLineEdit.text(), vtype)
         return nodeid, bname, var, vtype, dtype.nodeid
 
 
