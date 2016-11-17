@@ -9,6 +9,7 @@ from opcua import Node
 from opcua.common.ua_utils import string_to_val, val_to_string
 
 from uawidgets.get_node_dialog import GetNodeButton
+from uawidgets.utils import trycatch
 
 
 logger = logging.getLogger(__name__)
@@ -258,6 +259,7 @@ class MyDelegate(QStyledItemDelegate):
         QStyledItemDelegate.__init__(self, parent)
         self.attrs_widget = attrs_widget
 
+    @trycatch
     def createEditor(self, parent, option, idx):
         if idx.column() != 1:
             return None
@@ -300,6 +302,7 @@ class MyDelegate(QStyledItemDelegate):
     #def setEditorData(self, editor, index):
         #pass
 
+    @trycatch
     def setModelData(self, editor, model, idx):
         # if user is setting a value on a null variant, try using the nodes datatype instead
         data = model.data(idx, Qt.UserRole)
@@ -379,10 +382,10 @@ class MyDelegate(QStyledItemDelegate):
     def _write_attr(self, data):
         dv = ua.DataValue(ua.Variant(data.value, varianttype=data.uatype))
         try:
-            self.logger.warning("Writing %s to %s", dv, data.attr)
+            logger.warning("Writing %s to %s", dv, data.attr)
             self.attrs_widget.current_node.set_attribute(data.attr, dv)
         except Exception as ex:
-            self.logger.exception("Exception while writing %s to %s", dv, data.attr)
+            logger.exception("Exception while writing %s to %s", dv, data.attr)
             self.error.emit(ex)
         else:
             self.attr_written.emit(data.attr, dv)
