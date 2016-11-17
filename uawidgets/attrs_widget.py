@@ -284,6 +284,13 @@ class MyDelegate(QStyledItemDelegate):
                 combo.addItem(nclass.name)
             combo.setCurrentText(text)
             return combo
+        elif data.attr == ua.AttributeIds.ValueRank:
+            combo = QComboBox(parent)
+            for rank in ua.ValueRank:
+                combo.addItem(rank.name)
+            combo.setCurrentText(text)
+            return combo
+
         elif data.attr == ua.AttributeIds.DataType:
             nodeid = getattr(ua.ObjectIds, text)
             node = Node(self.attrs_widget.current_node.server, nodeid)
@@ -355,6 +362,9 @@ class MyDelegate(QStyledItemDelegate):
 
         if data.attr == ua.AttributeIds.NodeClass:
             data.value = ua.NodeClass[editor.currentText()]
+            text = editor.currentText()
+        elif data.attr == ua.AttributeIds.ValueRank:
+            data.value = ua.ValueRank[editor.currentText()]
             text = editor.currentText()
         elif data.attr == ua.AttributeIds.DataType:
             data.value = editor.get_node().nodeid
