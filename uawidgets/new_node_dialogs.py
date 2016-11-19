@@ -113,7 +113,7 @@ class NewUaObjectDialog(NewNodeBaseDialog):
 
 
 class NewUaVariableDialog(NewNodeBaseDialog):
-    def __init__(self, parent, title, server, default_value):
+    def __init__(self, parent, title, server, default_value, dtype):
         NewNodeBaseDialog.__init__(self, parent, title, server)
 
         self.valLineEdit = QLineEdit(self)
@@ -121,18 +121,20 @@ class NewUaVariableDialog(NewNodeBaseDialog):
         self.layout.addWidget(self.valLineEdit)
 
         base_data_type = server.get_node(ua.ObjectIds.BaseDataType)
-        dtype_str = self.settings.value("last_datatype", None)
-        if dtype_str is None:
+        if dtype is None:
             current_type = server.get_node(ua.ObjectIds.Float)
+        elif isinstance(dtype, str):
+            current_type = server.get_node(ua.NodeId.from_string(dtype))
+        elif isinstance(dtype, int):
+            current_type = server.get_node(ua.NodeId(dtype))
         else:
-            current_type = server.get_node(ua.NodeId.from_string(dtype_str))
+            raise RuntimeError("Uknown type data type {}".format(dtype))
         self.dataTypeButton = GetNodeButton(self, current_type, base_data_type)
         self.layout.addWidget(self.dataTypeButton)
 
     def get_args(self):
         nodeid, bname = self.get_nodeid_and_bname()
         dtype = self.dataTypeButton.get_node()
-        self.settings.setValue("last_datatype", dtype.nodeid.to_string())
         vtype = data_type_to_variant_type(dtype)
         if vtype == ua.VariantType.ExtensionObject:
             # we currently cannot construct a complex object from a string

@@ -1,4 +1,4 @@
-from PyQt5.QtCore import pyqtSignal, QMimeData, QObject
+from PyQt5.QtCore import pyqtSignal, QMimeData, QObject, Qt
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon
 from PyQt5.QtWidgets import QApplication, QAbstractItemView
 
@@ -35,6 +35,20 @@ class TreeWidget(QObject):
         path_str = ",".join(path)
         QApplication.clipboard().setText(path_str)
 
+    def set_current_node(self, node):
+        """
+        this function is meant to be used in tests"
+        """
+        if isinstance(node, str):
+            idxlist = self.model.match(self.model.index(0, 0), Qt.DisplayRole, node, 2, Qt.MatchExactly|Qt.MatchRecursive)
+        else:
+            # FIXME: this does not work, what is wrong?
+            idxlist = self.model.match(self.model.index(0, 0), Qt.UserRole, node, 2, Qt.MatchExactly|Qt.MatchRecursive)
+        if not idxlist:
+            raise RuntimeError("Node not found {}".format(node))
+        idx = idxlist[0]
+        self.view.setCurrentIndex(idx)
+
     def copy_nodeid(self):
         node = self.get_current_node()
         text = node.nodeid.to_string()
@@ -45,8 +59,8 @@ class TreeWidget(QObject):
         idx = idx.sibling(idx.row(), 0)
         it = self.model.itemFromIndex(idx)
         path = []
-        while it and it.data():
-            node = it.data()
+        while it and it.data(Qt.UserRole):
+            node = it.data(Qt.UserRole)
             name = node.get_browse_name().to_string()
             path.insert(0, name)
             it = it.parent()
@@ -77,11 +91,11 @@ class TreeWidget(QObject):
             item = self.model.item(0, 0)
         for _ in range(item.rowCount()):
             child_it = item.child(0, 0)
-            node = child_it.data()
+            node = child_it.data(Qt.UserRole)
             if node:
                 self.model.reload(node)
             item.takeRow(0)
-        node = item.data()
+        node = item.data(Qt.UserRole)
         if node:
             self.model.reload(node)
 
@@ -96,7 +110,7 @@ class TreeWidget(QObject):
         it = self.model.itemFromIndex(idx)
         if not it:
             return None
-        node = it.data()
+        node = it.data(Qt.UserRole)
         if not node:
             self.error.emit("Item does not contain node data, report!")
             raise RuntimeError("Item does not contain node data, report!")
@@ -153,10 +167,10 @@ class TreeViewModel(QStandardItemModel):
         elif desc.NodeClass == ua.NodeClass.ReferenceType:
             item[0].setIcon(QIcon(":/reference_type.svg"))
         if node:
-            item[0].setData(node)
+            item[0].setData(node, Qt.UserRole)
         else:
-            parent_node = parent.data()
-            item[0].setData(Node(parent_node.server, desc.NodeId))
+            parent_node = parent.data(Qt.UserRole)
+            item[0].setData(Node(parent_node.server, desc.NodeId), Qt.UserRole)
         if parent:
             return parent.appendRow(item)
         else:
@@ -170,7 +184,7 @@ class TreeViewModel(QStandardItemModel):
         item = self.itemFromIndex(idx)
         if not item:
             return True
-        node = item.data()
+        node = item.data(Qt.UserRole)
         if node not in self._fetched:
             self._fetched.append(node)
             return True
@@ -180,7 +194,7 @@ class TreeViewModel(QStandardItemModel):
         item = self.itemFromIndex(idx)
         if not item:
             return True
-        node = item.data()
+        node = item.data(Qt.UserRole)
         if node in self._fetched:
             return QStandardItemModel.hasChildren(self, idx)
         return True
@@ -192,7 +206,7 @@ class TreeViewModel(QStandardItemModel):
 
     def _fetchMore(self, parent):
         try:
-            descs = parent.data().get_children_descriptions()
+            descs = parent.data(Qt.UserRole).get_children_descriptions()
             descs.sort(key=lambda x: x.BrowseName)
             for desc in descs:
                 self.add_item(desc, parent)
@@ -206,7 +220,7 @@ class TreeViewModel(QStandardItemModel):
         for idx in idxs:
             item = self.itemFromIndex(idx)
             if item:
-                node = item.data()
+                node = item.data(Qt.UserRole)
                 if node:
                     nodes.append(node.nodeid.to_string())
         mdata.setText(", ".join(nodes))
