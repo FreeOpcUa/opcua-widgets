@@ -3,7 +3,7 @@ import unittest
 import sys
 print("SYS:PATH", sys.path)
 sys.path.insert(0, "python-opcua")
-sys.path.insert(0, "..")
+sys.path.insert(0, ".")
 
 from opcua import ua, Server
 
@@ -11,7 +11,7 @@ from PyQt5.QtCore import QTimer, QSettings, QModelIndex, Qt, QCoreApplication
 from PyQt5.QtWidgets import QApplication, QTreeView
 from PyQt5.QtTest import QTest
 
-from attrs_widget import AttrsWidget
+from uawidgets.attrs_widget import AttrsWidget
 
 
 class TestAttrsWidget(unittest.TestCase):
