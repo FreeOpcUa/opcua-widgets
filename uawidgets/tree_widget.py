@@ -28,6 +28,7 @@ class TreeWidget(QObject):
     def set_root_node(self, node):
         self.model.clear()
         self.model.set_root_node(node)
+        self.view.expandToDepth(0)
 
     def copy_path(self):
         path = self.get_current_path()
