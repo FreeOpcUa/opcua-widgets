@@ -1,7 +1,7 @@
 from PyQt5.QtCore import QSettings, Qt
 from PyQt5.QtWidgets import QPushButton, QComboBox, QLabel, QLineEdit, QHBoxLayout, QDialog, QDialogButtonBox, QVBoxLayout, QCheckBox, QFrame
 
-from opcua import ua
+from opcua import ua, Node
 from opcua.common.ua_utils import string_to_variant
 from opcua.common.ua_utils import data_type_to_variant_type
 
@@ -123,12 +123,8 @@ class NewUaVariableDialog(NewNodeBaseDialog):
         base_data_type = server.get_node(ua.ObjectIds.BaseDataType)
         if dtype is None:
             current_type = server.get_node(ua.ObjectIds.Float)
-        elif isinstance(dtype, str):
-            current_type = server.get_node(ua.NodeId.from_string(dtype))
-        elif isinstance(dtype, int):
-            current_type = server.get_node(ua.NodeId(dtype))
         else:
-            raise RuntimeError("Uknown type data type {}".format(dtype))
+            current_type = server.get_node(dtype)
         self.dataTypeButton = GetNodeButton(self, current_type, base_data_type)
         self.layout.addWidget(self.dataTypeButton)
 
