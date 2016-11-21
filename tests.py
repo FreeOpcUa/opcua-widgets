@@ -55,6 +55,14 @@ class TestAttrsWidget(unittest.TestCase):
         self.modify_item("Value", "8.45", 1)
         self.assertEqual(myvar.get_value(), 8.45)
 
+    def test_display_var_bytes(self):
+        objects = self.server.nodes.objects
+        myvar = objects.add_variable(1, "myvar_bytes", b"jkl", ua.VariantType.ByteString)
+        self.widget.show_attrs(myvar)
+        self.modify_item("Value", "titi", 1)
+        self.assertEqual(myvar.get_value(), b"titi")
+
+
 
 
 
