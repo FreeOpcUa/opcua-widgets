@@ -41,6 +41,9 @@ class TestAttrsWidget(unittest.TestCase):
         self.widget.view.closeEditor(editor, QAbstractItemDelegate.NoHint)
         self.widget.view.reset()
 
+    def modify_value(self, val):
+        self.modify_item("Value", val, 1)
+
     def test_display_objects_node(self):
         objects = self.server.nodes.objects
         self.widget.show_attrs(objects)
@@ -52,15 +55,24 @@ class TestAttrsWidget(unittest.TestCase):
         objects = self.server.nodes.objects
         myvar = objects.add_variable(1, "myvar1", 9.99, ua.VariantType.Double)
         self.widget.show_attrs(myvar)
-        self.modify_item("Value", "8.45", 1)
+        self.modify_value("8.45")
         self.assertEqual(myvar.get_value(), 8.45)
 
     def test_display_var_bytes(self):
         objects = self.server.nodes.objects
         myvar = objects.add_variable(1, "myvar_bytes", b"jkl", ua.VariantType.ByteString)
         self.widget.show_attrs(myvar)
-        self.modify_item("Value", "titi", 1)
+        self.modify_value("titi")
         self.assertEqual(myvar.get_value(), b"titi")
+
+    def ZZZ_test_change_data_type(self):  # need to find a way to modify combo box with QTest
+        objects = self.server.nodes.objects
+        myvar = objects.add_variable(1, "myvar1", 9.99, ua.VariantType.Double)
+        self.widget.show_attrs(myvar)
+        self.modify_item("DataType", "Float")
+        print("DT", myvar.get_data_type())
+        self.assertEqual(myvar.get_(), b"titi")
+
 
 
 
