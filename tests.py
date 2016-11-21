@@ -24,14 +24,14 @@ class TestAttrsWidget(unittest.TestCase):
     def tearDown(self):
         self.server.stop()
 
-    def modify_item(self, text, val):
+    def modify_item(self, text, val, match_to_use=0):
         """
         modify the current item and set its displayed value to 'val'
         """
-        idxlist = self.widget.model.match(self.widget.model.index(0, 0), Qt.DisplayRole, text, 2, Qt.MatchStartsWith | Qt.MatchRecursive)
+        idxlist = self.widget.model.match(self.widget.model.index(0, 0), Qt.DisplayRole, text, match_to_use + 1, Qt.MatchStartsWith | Qt.MatchRecursive)
         if not idxlist:
             raise RuntimeError("Item with text '{}' not found".format(text))
-        idx = idxlist[0]
+        idx = idxlist[match_to_use]
         self.widget.view.setCurrentIndex(idx)
         idx = idx.sibling(0, 1)
         self.widget.view.edit(idx)
@@ -47,6 +47,14 @@ class TestAttrsWidget(unittest.TestCase):
         self.modify_item("BrowseName", "5:titi")
         self.assertEqual(objects.get_browse_name().to_string(), "5:titi")
         self.modify_item("BrowseName", "0:Objects")  # restore states for other tests
+
+    def test_display_var_double(self):
+        objects = self.server.nodes.objects
+        myvar = objects.add_variable(1, "myvar1", 9.99, ua.VariantType.Double)
+        self.widget.show_attrs(myvar)
+        self.modify_item("Value", "8.45", 1)
+        self.assertEqual(myvar.get_value(), 8.45)
+
 
 
 
