@@ -352,7 +352,9 @@ class MyDelegate(QStyledItemDelegate):
         return parent_idx, it.data(Qt.UserRole)
 
     def _set_attribute_data(self, data, editor, model, idx):
-        if data.uatype is ua.VariantType.Null:
+        if data.attr is ua.AttributeIds.Value:
+            #for value we checkd data type from the variable data type
+            # this is more robust
             try:
                 data.uatype = self.attrs_widget.current_node.get_data_type_as_variant_type()
             except Exception as ex:

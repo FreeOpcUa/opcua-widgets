@@ -93,6 +93,10 @@ class TestAttrsWidget(unittest.TestCase):
         self.modify_item("DataType", self.server.get_node(new_dtype))
         self.assertEqual(myvar.get_data_type(), new_dtype)
 
+        # now try to write a value which is a string
+        self.modify_value("mystring")
+        self.assertEqual(myvar.get_value(), "mystring")
+
     def test_change_value_rank(self):  # need to find a way to modify combo box with QTest
         objects = self.server.nodes.objects
         myvar = objects.add_variable(1, "myvar1", 9.99, ua.VariantType.Double)
