@@ -216,7 +216,6 @@ class AttrsWidget(QObject):
             parent.appendRow(row)
             if vtype == ua.VariantType.ExtensionObject:
                 self._show_ext_obj(name_item, val)
-        return row
     
     def refresh_list(self, parent, mylist, vtype):
         while parent.hasChildren():
