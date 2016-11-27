@@ -207,7 +207,7 @@ class NewUaMethodDialog(NewNodeBaseDialog):
         if dtype_str is None:
             current_type = self.server.get_node(ua.ObjectIds.Float)
         else:
-            current_type = self.server.get_node(ua.NodeId.from_string(dtype_str))
+            current_type = self.server.get_node(dtype_str)
         dataTypeButton = GetNodeButton(self, current_type, base_data_type)
         rowlayout.addWidget(dataTypeButton)
 
