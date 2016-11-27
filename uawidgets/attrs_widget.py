@@ -320,7 +320,7 @@ class MyDelegate(QStyledItemDelegate):
         elif isinstance(data, ListData):
             self._set_list_data(data, editor, model, idx)
         else:
-            logger.warning("Error while setting model data, data is %s", data)
+            logger.info("Error while setting model data, data is %s", data)
 
     def _set_list_data(self, data, editor, model, idx):
         text = editor.text()
@@ -393,7 +393,7 @@ class MyDelegate(QStyledItemDelegate):
     def _write_attr(self, data):
         dv = ua.DataValue(ua.Variant(data.value, varianttype=data.uatype))
         try:
-            logger.warning("Writing %s to %s", dv, data.attr)
+            logger.info("Writing %s to %s", dv, data.attr)
             self.attrs_widget.current_node.set_attribute(data.attr, dv)
         except Exception as ex:
             logger.exception("Exception while writing %s to %s", dv, data.attr)
