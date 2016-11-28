@@ -126,7 +126,19 @@ class NewUaVariableDialog(NewNodeBaseDialog):
         else:
             current_type = server.get_node(dtype)
         self.dataTypeButton = GetNodeButton(self, current_type, base_data_type)
+        self.dataTypeButton.value_changed.connect(self._data_type_changed)
         self.layout.addWidget(self.dataTypeButton)
+        self._data_type_changed(self.dataTypeButton.current_node)
+
+    def _data_type_changed(self, node):
+        if node.nodeid in (ua.NodeId(ua.ObjectIds.Structure),
+                           ua.NodeId(ua.ObjectIds.Enumeration),
+                           ua.NodeId(ua.ObjectIds.DiagnosticInfo)):
+            self.valLineEdit.setText("Null")
+            self.valLineEdit.setEnabled(False)
+        else:
+            #self.valLineEdit.setText("Null")
+            self.valLineEdit.setEnabled(True)
 
     def get_args(self):
         nodeid, bname = self.get_nodeid_and_bname()

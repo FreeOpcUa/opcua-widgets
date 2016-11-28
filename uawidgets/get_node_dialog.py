@@ -1,3 +1,4 @@
+from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QTreeView, QDialog, QVBoxLayout, QDialogButtonBox, QAbstractItemView, QPushButton
 from PyQt5.QtCore import Qt
 
@@ -10,6 +11,9 @@ class GetNodeButton(QPushButton):
     """
     Create Button which will query a node
     """
+
+    value_changed = pyqtSignal(Node)
+
     def __init__(self, parent, currentnode, startnode):
         text = currentnode.get_browse_name().to_string()
         QPushButton.__init__(self, text, parent)
@@ -22,6 +26,7 @@ class GetNodeButton(QPushButton):
         if ok:
             self.current_node = node
             self.setText(self.current_node.get_browse_name().to_string())
+            self.value_changed.emit(self.current_node)
 
     def get_node(self):
         return self.current_node
