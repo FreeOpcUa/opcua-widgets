@@ -48,6 +48,7 @@ class TreeWidget(QObject):
             raise RuntimeError("Node not found {}".format(node))
         idx = idxlist[0]
         self.view.setCurrentIndex(idx)
+        self.view.activated.emit(idx)
 
     def copy_nodeid(self):
         node = self.get_current_node()
