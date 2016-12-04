@@ -9,7 +9,7 @@ from opcua import Node
 from opcua.common.ua_utils import string_to_val, val_to_string
 
 from uawidgets.get_node_dialog import GetNodeButton
-from uawidgets.utils import trycatch
+from uawidgets.utils import trycatchslot
 
 
 logger = logging.getLogger(__name__)
@@ -258,7 +258,7 @@ class MyDelegate(QStyledItemDelegate):
         QStyledItemDelegate.__init__(self, parent)
         self.attrs_widget = attrs_widget
 
-    @trycatch
+    @trycatchslot
     def createEditor(self, parent, option, idx):
         if idx.column() != 1:
             return None
@@ -308,7 +308,7 @@ class MyDelegate(QStyledItemDelegate):
     #def setEditorData(self, editor, index):
         #pass
 
-    @trycatch
+    @trycatchslot
     def setModelData(self, editor, model, idx):
         # if user is setting a value on a null variant, try using the nodes datatype instead
         data = model.data(idx, Qt.UserRole)
