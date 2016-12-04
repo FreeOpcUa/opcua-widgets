@@ -37,7 +37,7 @@ class TreeWidget(QObject):
 
     def set_current_node(self, node):
         """
-        this function is meant to be used in tests"
+        this function is meant to be used in tests
         """
         if isinstance(node, str):
             idxlist = self.model.match(self.model.index(0, 0), Qt.DisplayRole, node, 2, Qt.MatchExactly|Qt.MatchRecursive)
@@ -49,6 +49,13 @@ class TreeWidget(QObject):
         idx = idxlist[0]
         self.view.setCurrentIndex(idx)
         self.view.activated.emit(idx)
+
+    def expand_current_node(self, expand=True):
+        """
+        this function is meant to be used in tests
+        """
+        idx = self.view.currentIndex()
+        self.view.setExpanded(idx, expand)
 
     def copy_nodeid(self):
         node = self.get_current_node()
