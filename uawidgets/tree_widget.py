@@ -8,7 +8,7 @@ from opcua import Node
 
 class TreeWidget(QObject):
 
-    error = pyqtSignal(str)
+    error = pyqtSignal(Exception)
 
     def __init__(self, view):
         QObject.__init__(self, view)
@@ -120,14 +120,15 @@ class TreeWidget(QObject):
             return None
         node = it.data(Qt.UserRole)
         if not node:
-            self.error.emit("Item does not contain node data, report!")
-            raise RuntimeError("Item does not contain node data, report!")
+            ex = RuntimeError("Item does not contain node data, report!")
+            self.error.emit(ex)
+            raise ex
         return node
 
 
 class TreeViewModel(QStandardItemModel):
 
-    error = pyqtSignal(str)
+    error = pyqtSignal(Exception)
 
     def __init__(self):
         super(TreeViewModel, self).__init__()
