@@ -9,8 +9,8 @@ logger = logging.getLogger(__name__)
 def trycatchslot(func):
     """
     wrap a at slot.
-    log and call a method called show_error in 
-    case of error
+    log and call a method called show_error or a signal
+    called error in case of error
     """
     def wrapper(self, *args):
         # filter out excess args as qt signals do

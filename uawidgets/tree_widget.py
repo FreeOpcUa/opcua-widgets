@@ -1,6 +1,6 @@
-from PyQt5.QtCore import pyqtSignal, QMimeData, QObject, Qt
+from PyQt5.QtCore import pyqtSignal, QMimeData, QObject, Qt, QSettings
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon
-from PyQt5.QtWidgets import QApplication, QAbstractItemView
+from PyQt5.QtWidgets import QApplication, QAbstractItemView, QAction
 
 from opcua import ua
 from opcua import Node
@@ -17,10 +17,22 @@ class TreeWidget(QObject):
         self.model.clear()  # FIXME: do we need this?
         self.model.error.connect(self.error)
         self.view.setModel(self.model)
+
         #self.view.setUniformRowHeights(True)
-        self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.view.header().setSectionResizeMode(3)
+        self.model.setHorizontalHeaderLabels(['DisplayName', "BrowseName", 'NodeId'])
+        self.view.header().setSectionResizeMode(0)
         self.view.header().setStretchLastSection(True)
+        self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.settings = QSettings()
+        state = self.settings.value("tree_widget_state", None)
+        if state is not None:
+            self.view.header().restoreState(state)
+
+        self.actionReload = QAction("Reload", self)
+        self.actionReload.triggered.connect(self.reload_current)
+
+    def save_state(self):
+        self.settings.setValue("tree_widget_state", self.view.header().saveState())
 
     def clear(self):
         self.model.clear()
@@ -101,11 +113,14 @@ class TreeWidget(QObject):
             child_it = item.child(0, 0)
             node = child_it.data(Qt.UserRole)
             if node:
-                self.model.reload(node)
+                self.model.reset_cache(node)
             item.takeRow(0)
         node = item.data(Qt.UserRole)
         if node:
-            self.model.reload(node)
+            self.model.reset_cache(node)
+            idx = self.model.indexFromItem(item)
+            #if self.view.isExpanded(idx):
+            #self.view.setExpanded(idx, True)
 
     def remove_current_item(self):
         idx = self.view.currentIndex()
@@ -135,9 +150,9 @@ class TreeViewModel(QStandardItemModel):
         self._fetched = []
 
     def clear(self):
-        QStandardItemModel.clear(self)
+        # remove all rows but not header!!
+        self.removeRows(0, self.rowCount())
         self._fetched = []
-        self.setHorizontalHeaderLabels(['DisplayName', "BrowseName", 'NodeId'])
 
     def set_root_node(self, node):
         desc = self._get_node_desc(node)
@@ -185,14 +200,14 @@ class TreeViewModel(QStandardItemModel):
         else:
             return self.appendRow(item)
 
-    def reload(self, node):
+    def reset_cache(self, node):
         if node in self._fetched:
             self._fetched.remove(node)
 
     def canFetchMore(self, idx):
         item = self.itemFromIndex(idx)
         if not item:
-            return True
+            return False
         node = item.data(Qt.UserRole)
         if node not in self._fetched:
             self._fetched.append(node)

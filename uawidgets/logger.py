@@ -11,6 +11,7 @@ class QtHandler(logging.Handler):
 
     def emit(self, record):
         msg = self.format(record)
+        print(msg)  # print to stdout also!
         self.widget.append(msg)
 
 
