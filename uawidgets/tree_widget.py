@@ -217,8 +217,11 @@ class TreeViewModel(QStandardItemModel):
         try:
             descs = parent.data(Qt.UserRole).get_children_descriptions()
             descs.sort(key=lambda x: x.BrowseName)
+            added = []
             for desc in descs:
-                self.add_item(desc, parent)
+                if not desc.NodeId in added:
+                    self.add_item(desc, parent)
+                    added.append(desc.NodeId)
         except Exception as ex:
             self.error.emit(ex)
             raise
