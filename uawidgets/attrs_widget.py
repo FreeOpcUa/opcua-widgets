@@ -2,7 +2,7 @@ import logging
 
 from PyQt5.QtCore import pyqtSignal, Qt, QObject, QSettings
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
-from PyQt5.QtWidgets import QApplication, QMenu, QAction, QStyledItemDelegate, QComboBox, QVBoxLayout, QCheckBox, QDialog
+from PyQt5.QtWidgets import QApplication, QMenu, QAction, QStyledItemDelegate, QComboBox, QVBoxLayout, QCheckBox, QDialog, QAbstractItemView
 
 from opcua import ua
 from opcua import Node
@@ -100,6 +100,7 @@ class AttrsWidget(QObject):
         self.view.header().setStretchLastSection(True)
         self.view.expanded.connect(self._item_expanded)
         self.view.collapsed.connect(self._item_collapsed)
+        self.view.setEditTriggers(QAbstractItemView.DoubleClicked)
 
         # Context menu
         self.view.setContextMenuPolicy(Qt.CustomContextMenu)
