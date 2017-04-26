@@ -289,9 +289,9 @@ class MyDelegate(QStyledItemDelegate):
                 combo.addItem(rank.name)
             combo.setCurrentText(text)
             return combo
-
         elif data.attr == ua.AttributeIds.DataType:
-            nodeid = getattr(ua.ObjectIds, text)
+            #nodeid = getattr(ua.ObjectIds, text)
+            nodeid = data.value
             node = Node(self.attrs_widget.current_node.server, nodeid)
             startnode = Node(self.attrs_widget.current_node.server, ua.ObjectIds.BaseDataType)
             button = GetNodeButton(parent, node, startnode)
@@ -403,10 +403,8 @@ class MyDelegate(QStyledItemDelegate):
 
 
 def data_type_to_string(dtype):
-    # a bit too complex, we could just display browse name of node but it requires a query
-    if isinstance(dtype.Identifier, int) and dtype.Identifier < 63:
-        string = ua.datatype_to_varianttype(dtype).name
-    elif dtype.Identifier in ua.ObjectIdNames:
+    # we could just display browse name of node but it requires a query
+    if dtype.Identifier in ua.ObjectIdNames:
         string = ua.ObjectIdNames[dtype.Identifier]
     else:
         string = dtype.to_string()
