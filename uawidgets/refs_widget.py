@@ -38,6 +38,8 @@ class RefsWidget(QObject):
         if state is not None:
             self.view.horizontalHeader().restoreState(state)
 
+        self.reloadAction = QAction("Reload", self.model)
+        self.reloadAction.triggered.connect(self.reload)
         self.addRefAction = QAction("Add Reference", self.model)
         self.addRefAction.triggered.connect(self.add_ref)
         self.removeRefAction = QAction("Remove Reference", self.model)
@@ -46,16 +48,18 @@ class RefsWidget(QObject):
         self.view.setContextMenuPolicy(Qt.CustomContextMenu)
         self.view.customContextMenuRequested.connect(self.showContextMenu)
         self._contextMenu = QMenu()
+        self._contextMenu.addAction(self.reloadAction)
+        self._contextMenu.addSeparator()
         self._contextMenu.addAction(self.addRefAction)
         self._contextMenu.addAction(self.removeRefAction)
 
     def showContextMenu(self, position):
+        if not self.node:
+            return
         self.removeRefAction.setEnabled(False)
         idx = self.view.currentIndex()
-        if not idx.isValid():
-            print("NOT VALID")
-            return
-        self.removeRefAction.setEnabled(True)
+        if idx.isValid():
+            self.removeRefAction.setEnabled(True)
         self._contextMenu.exec_(self.view.viewport().mapToGlobal(position))
 
     def clear(self):
@@ -78,6 +82,12 @@ class RefsWidget(QObject):
         #self.view.edit(idx)
 
     @trycatchslot
+    def reload(self):
+        node = self.node
+        self.clear()
+        self.show_refs(node)
+
+    @trycatchslot
     def remove_ref(self):
         idx = self.view.currentIndex()
         if not idx.isValid():
@@ -85,8 +95,21 @@ class RefsWidget(QObject):
         idx = idx.sibling(idx.row(), 0)
         item = self.model.itemFromIndex(idx)
         ref = item.data(Qt.UserRole)
+        self._remove_ref(ref)
+        self.reload()
+    
+    def _remove_ref(self, ref):
         logger.info("Removing: %s", ref)
-        #self.reload()
+        it = ua.DeleteReferencesItem()
+        it.SourceNodeId = self.node.nodeid
+        it.ReferenceTypeId = ref.ReferenceTypeId
+        it.IsForward = ref.IsForward
+        it.TargetNodeId = ref.NodeId
+        it.DeleteBidirectional = False
+        #param = ua.DeleteReferencesParameters()
+        #param.ReferencesToDelete.append(it)
+        results = self.node.server.delete_references([it])
+        results[0].check()
 
     def save_state(self):
         self.settings.setValue("refs_widget", self.view.horizontalHeader().saveState())
