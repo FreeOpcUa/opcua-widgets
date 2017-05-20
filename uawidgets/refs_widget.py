@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class RefsWidget(QObject):
 
     error = pyqtSignal(Exception)
-    reference_changed = pyqtSignal(ua.NodeId)
+    reference_changed = pyqtSignal(Node)
 
     def __init__(self, view):
         self.view = view
@@ -154,7 +154,7 @@ class RefsWidget(QObject):
 class MyDelegate(QStyledItemDelegate):
 
     error = pyqtSignal(Exception)
-    reference_changed = pyqtSignal(ua.NodeId)
+    reference_changed = pyqtSignal(Node)
 
     def __init__(self, parent, widget):
         QStyledItemDelegate.__init__(self, parent)
@@ -209,6 +209,7 @@ class MyDelegate(QStyledItemDelegate):
         results = self._widget.node.server.add_references([it])
         results[0].check()
 
+        self.reference_changed.emit(self._widget.node)
         self._widget.reload()
 
 

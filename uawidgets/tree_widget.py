@@ -55,7 +55,7 @@ class TreeWidget(QObject):
             idxlist = self.model.match(self.model.index(0, 0), Qt.DisplayRole, node, 2, Qt.MatchExactly|Qt.MatchRecursive)
         else:
             # FIXME: this does not work, what is wrong?
-            idxlist = self.model.match(self.model.index(0, 0), Qt.UserRole, node, 2, Qt.MatchExactly|Qt.MatchRecursive)
+            idxlist = self.model.match(self.model.index(0, 0), Qt.UserRole, QVariantnode, 2, Qt.MatchExactly|Qt.MatchRecursive)
         if not idxlist:
             raise RuntimeError("Node not found {}".format(node))
         idx = idxlist[0]
@@ -68,6 +68,19 @@ class TreeWidget(QObject):
         """
         idx = self.view.currentIndex()
         self.view.setExpanded(idx, expand)
+
+    def expand_to_node(self, node):
+        path = node.get_path()
+        print("PATH", path)
+        for node in path:
+            # FIXME: this would be the correct way if it would work
+            #idxlist = self.model.match(self.model.index(0, 0), Qt.UserRole, QVariantnode, 2, Qt.MatchExactly|Qt.MatchRecursive)
+            text = node.get_display_name().Text.decode()
+            idxlist = self.model.match(self.model.index(0, 0), Qt.DisplayRole, text, 1, Qt.MatchExactly|Qt.MatchRecursive)
+            if idxlist:
+                idx = idxlist[0]
+                self.view.setExpanded(idx, True)
+                self.view.setCurrentIndex(idx)
 
     def copy_nodeid(self):
         node = self.get_current_node()
