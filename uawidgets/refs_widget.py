@@ -1,4 +1,5 @@
 import logging
+from copy import copy
 
 from PyQt5.QtCore import pyqtSignal, QObject, QSettings, Qt
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
@@ -95,10 +96,10 @@ class RefsWidget(QObject):
         idx = idx.sibling(idx.row(), 0)
         item = self.model.itemFromIndex(idx)
         ref = item.data(Qt.UserRole)
-        self._remove_ref(ref)
+        self.do_remove_ref(ref)
         self.reload()
     
-    def _remove_ref(self, ref):
+    def do_remove_ref(self, ref, check=True):
         logger.info("Removing: %s", ref)
         it = ua.DeleteReferencesItem()
         it.SourceNodeId = self.node.nodeid
@@ -109,7 +110,9 @@ class RefsWidget(QObject):
         #param = ua.DeleteReferencesParameters()
         #param.ReferencesToDelete.append(it)
         results = self.node.server.delete_references([it])
-        results[0].check()
+        logger.info("Remove result: %s", results[0]) 
+        if check:
+            results[0].check()
 
     def save_state(self):
         self.settings.setValue("refs_widget", self.view.horizontalHeader().saveState())
@@ -160,15 +163,17 @@ class MyDelegate(QStyledItemDelegate):
     @trycatchslot
     def createEditor(self, parent, option, idx):
         print("CREATE EDITOR", parent, option, idx)
-        if idx.column() == 2:
+        if idx.column() > 1:
             return None
-        item = self._widget.model.itemFromIndex(idx)
+        data_idx = idx.sibling(idx.row(), 0)
+        item = self._widget.model.itemFromIndex(data_idx)
         ref = item.data(Qt.UserRole)
         if idx.column() == 1:
-            #get target nodeid
-            pass
+            node = Node(self._widget.node.server, ref.NodeId)
+            startnode = Node(self._widget.node.server, ua.ObjectIds.RootFolder)
+            button = GetNodeButton(parent, node, startnode)
+            return button
         elif idx.column() == 0:
-            # get ref type
             node = Node(self._widget.node.server, ref.ReferenceTypeId)
             startnode = Node(self._widget.node.server, ua.ObjectIds.ReferenceTypesFolder)
             button = GetNodeButton(parent, node, startnode)
@@ -176,10 +181,36 @@ class MyDelegate(QStyledItemDelegate):
 
     @trycatchslot
     def setModelData(self, editor, model, idx):
-        # if user is setting a value on a null variant, try using the nodes datatype instead
-        idx = idx.sibling(idx.row(), 0)
-        ref = model.data(idx, Qt.UserRole)
-        #FIXME: read values from ui and update
+        data_idx = idx.sibling(idx.row(), 0)
+        ref = model.data(data_idx, Qt.UserRole)
+        self._widget.do_remove_ref(ref, check=False)
+        if idx.column() == 0:
+            ref.ReferenceTypeId = editor.current_node.nodeid
+            model.setData(idx, ref.ReferenceTypeId.to_string(), Qt.DisplayRole)
+        elif idx.column() == 1:
+            ref.NodeId = editor.current_node.nodeid
+            ref.NodeClass = editor.current_node.get_node_class()
+            model.setData(idx, ref.NodeId.to_string(), Qt.DisplayRole)
+        model.setData(data_idx, ref, Qt.UserRole)
+        if ref.NodeId.is_null() or ref.ReferenceTypeId.is_null():
+            logger.info("Do not save yet. Need NodeId and ReferenceTypeId to be set")
+            return
+        self._write_ref(ref)
+
+    def _write_ref(self, ref):
         logger.info("Writing ref %s", ref)
+        it = ua.AddReferencesItem()
+        it.SourceNodeId = self._widget.node.nodeid
+        it.ReferenceTypeId = ref.ReferenceTypeId
+        it.IsForward = ref.IsForward
+        it.TargetNodeId = ref.NodeId
+        it.TargetNodeClass = ref.NodeClass
+
+        results = self._widget.node.server.add_references([it])
+        results[0].check()
+
+        self._widget.reload()
+
+
 
 

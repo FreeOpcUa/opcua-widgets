@@ -15,7 +15,10 @@ class GetNodeButton(QPushButton):
     value_changed = pyqtSignal(Node)
 
     def __init__(self, parent, currentnode, startnode):
-        text = currentnode.get_browse_name().to_string()
+        if currentnode.nodeid.is_null():
+            text = "Null"
+        else:
+            text = currentnode.get_browse_name().to_string()
         QPushButton.__init__(self, text, parent)
         self.current_node = currentnode
         self.start_node = startnode
