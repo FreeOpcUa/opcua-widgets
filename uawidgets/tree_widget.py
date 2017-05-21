@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import QApplication, QAbstractItemView, QAction
 
 from opcua import ua
 from opcua import Node
+from opcua.ua import UaError
 
 
 class TreeWidget(QObject):
@@ -75,7 +76,10 @@ class TreeWidget(QObject):
         for node in path:
             # FIXME: this would be the correct way if it would work
             #idxlist = self.model.match(self.model.index(0, 0), Qt.UserRole, QVariantnode, 2, Qt.MatchExactly|Qt.MatchRecursive)
-            text = node.get_display_name().Text.decode()
+            try:
+                text = node.get_display_name().Text.decode()
+            except UaError as ex:
+                return
             idxlist = self.model.match(self.model.index(0, 0), Qt.DisplayRole, text, 1, Qt.MatchExactly|Qt.MatchRecursive)
             if idxlist:
                 idx = idxlist[0]
