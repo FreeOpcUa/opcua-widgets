@@ -32,12 +32,12 @@ class RefsWidget(QObject):
         self.view.setItemDelegate(delegate)
         self.settings = QSettings()
         self.model.setHorizontalHeaderLabels(['ReferenceType', 'NodeId', "BrowseName", "TypeDefinition"])
-        self.view.horizontalHeader().setSectionResizeMode(0)
-        self.view.horizontalHeader().setStretchLastSection(True)
-        state = self.settings.value("refs_widget", None)
-        self.node = None
+        state = self.settings.value("WindowState/refs_widget_state", None)
         if state is not None:
             self.view.horizontalHeader().restoreState(state)
+        self.view.horizontalHeader().setSectionResizeMode(0)
+        self.view.horizontalHeader().setStretchLastSection(True)
+        self.node = None
 
         self.reloadAction = QAction("Reload", self.model)
         self.reloadAction.triggered.connect(self.reload)
@@ -115,7 +115,7 @@ class RefsWidget(QObject):
             results[0].check()
 
     def save_state(self):
-        self.settings.setValue("refs_widget", self.view.horizontalHeader().saveState())
+        self.settings.setValue("WindowState/refs_widget_state", self.view.horizontalHeader().saveState())
 
     def show_refs(self, node):
         self.clear()

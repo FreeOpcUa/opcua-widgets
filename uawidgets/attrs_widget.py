@@ -91,7 +91,7 @@ class AttrsWidget(QObject):
         self.view.setItemDelegate(delegate)
         self.model = QStandardItemModel()
         self.model.setHorizontalHeaderLabels(['Attribute', 'Value', 'DataType'])
-        state = self.settings.value("attrs_widget_state", None)
+        state = self.settings.value("WindowState/attrs_widget_state", None)
         if state is not None:
             self.view.header().restoreState(state)
         self.view.setModel(self.model)
@@ -111,7 +111,7 @@ class AttrsWidget(QObject):
         self._contextMenu.addAction(copyaction)
 
     def save_state(self):
-        self.settings.setValue("attrs_widget_state", self.view.header().saveState())
+        self.settings.setValue("WindowState/attrs_widget_state", self.view.header().saveState())
 
     def _item_expanded(self, idx):
         if not idx.parent().isValid():
