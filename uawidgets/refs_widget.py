@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import QMenu, QAction, QStyledItemDelegate, QAbstractItemVi
 from opcua import ua, Node
 
 from uawidgets.utils import trycatchslot
-from uawidgets.get_node_dialog import GetNodeButton
+from uawidgets.get_node_dialog import GetNodeTextButton
 
 
 logger = logging.getLogger(__name__)
@@ -171,12 +171,12 @@ class MyDelegate(QStyledItemDelegate):
         if idx.column() == 1:
             node = Node(self._widget.node.server, ref.NodeId)
             startnode = Node(self._widget.node.server, ua.ObjectIds.RootFolder)
-            button = GetNodeButton(parent, node, startnode)
+            button = GetNodeTextButton(parent, node, startnode)
             return button
         elif idx.column() == 0:
             node = Node(self._widget.node.server, ref.ReferenceTypeId)
             startnode = Node(self._widget.node.server, ua.ObjectIds.ReferenceTypesFolder)
-            button = GetNodeButton(parent, node, startnode)
+            button = GetNodeTextButton(parent, node, startnode)
             return button
 
     @trycatchslot
@@ -185,11 +185,11 @@ class MyDelegate(QStyledItemDelegate):
         ref = model.data(data_idx, Qt.UserRole)
         self._widget.do_remove_ref(ref, check=False)
         if idx.column() == 0:
-            ref.ReferenceTypeId = editor.current_node.nodeid
+            ref.ReferenceTypeId = editor.get_node().nodeid
             model.setData(idx, ref.ReferenceTypeId.to_string(), Qt.DisplayRole)
         elif idx.column() == 1:
-            ref.NodeId = editor.current_node.nodeid
-            ref.NodeClass = editor.current_node.get_node_class()
+            ref.NodeId = editor.get_node().nodeid
+            ref.NodeClass = editor.get_node().get_node_class()
             model.setData(idx, ref.NodeId.to_string(), Qt.DisplayRole)
         model.setData(data_idx, ref, Qt.UserRole)
         if ref.NodeId.is_null() or ref.ReferenceTypeId.is_null():

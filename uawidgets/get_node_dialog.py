@@ -1,10 +1,50 @@
 from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtWidgets import QTreeView, QDialog, QVBoxLayout, QDialogButtonBox, QAbstractItemView, QPushButton
+from PyQt5.QtWidgets import QTreeView, QDialog, QHBoxLayout, QVBoxLayout, QDialogButtonBox, QAbstractItemView, QPushButton, QLineEdit, QWidget
 from PyQt5.QtCore import Qt
 
-from opcua import Node
+from opcua import Node, ua
 
 from uawidgets.tree_widget import TreeWidget
+
+
+class GetNodeTextButton(QWidget):
+    """
+    Create a text field with  a button which will query a node
+    """
+
+    def __init__(self, parent, currentnode, startnode):
+        QWidget.__init__(self, parent)
+        #QWidget.__init__(self)
+        if currentnode.nodeid.is_null():
+            text = "Null"
+        else:
+            text = currentnode.nodeid.to_string()
+        self.lineEdit = QLineEdit(parent)
+        self.lineEdit.setText(text)
+        self.button = QPushButton(parent)
+        self.button.setText("...")
+        self.button.setMinimumWidth(5)
+        self.layout = QHBoxLayout(parent)
+        self.layout.setSpacing(0)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.addWidget(self.lineEdit)
+        self.layout.addWidget(self.button)
+        self.setLayout(self.layout)
+        self.server = currentnode.server
+        self.start_node = startnode
+        self.button.clicked.connect(self.get_new_node)
+
+    def get_new_node(self):
+        node = self.get_node()
+        node, ok = GetNodeDialog.getNode(self, self.start_node, currentnode=node)
+        if ok:
+            self.lineEdit.setText(node.nodeid.to_string())
+
+    def get_node(self):
+        print(self.lineEdit.text())
+        print(Node(self.server, ua.NodeId.from_string(self.lineEdit.text())))
+        return Node(self.server, ua.NodeId.from_string(self.lineEdit.text()))
+
 
 
 class GetNodeButton(QPushButton):
@@ -20,19 +60,19 @@ class GetNodeButton(QPushButton):
         else:
             text = currentnode.get_browse_name().to_string()
         QPushButton.__init__(self, text, parent)
-        self.current_node = currentnode
+        self._current_node = currentnode
         self.start_node = startnode
         self.clicked.connect(self.get_new_node)
 
     def get_new_node(self):
-        node, ok = GetNodeDialog.getNode(self, self.start_node, currentnode=self.current_node)
+        node, ok = GetNodeDialog.getNode(self, self.start_node, currentnode=self._current_node)
         if ok:
-            self.current_node = node
-            self.setText(self.current_node.get_browse_name().to_string())
-            self.value_changed.emit(self.current_node)
+            self._current_node = node
+            self.setText(self._current_node.get_browse_name().to_string())
+            self.value_changed.emit(self._current_node)
 
     def get_node(self):
-        return self.current_node
+        return self._current_node
 
 
 class GetNodeDialog(QDialog):
