@@ -48,31 +48,18 @@ class TreeWidget(QObject):
         path_str = ",".join(path)
         QApplication.clipboard().setText(path_str)
 
-    def set_current_node(self, node):
-        """
-        this function is meant to be used in tests
-        """
-        if isinstance(node, str):
-            idxlist = self.model.match(self.model.index(0, 0), Qt.DisplayRole, node, 2, Qt.MatchExactly|Qt.MatchRecursive)
-        else:
-            # FIXME: this does not work, what is wrong?
-            idxlist = self.model.match(self.model.index(0, 0), Qt.UserRole, QVariantnode, 2, Qt.MatchExactly|Qt.MatchRecursive)
-        if not idxlist:
-            raise RuntimeError("Node not found {}".format(node))
-        idx = idxlist[0]
-        self.view.setCurrentIndex(idx)
-        self.view.activated.emit(idx)
-
     def expand_current_node(self, expand=True):
-        """
-        this function is meant to be used in tests
-        """
         idx = self.view.currentIndex()
         self.view.setExpanded(idx, expand)
 
     def expand_to_node(self, node):
+        """
+        Expand tree until given node and select it
+        """
+        if isinstance(node, str):
+            idxlist = self.model.match(self.model.index(0, 0), Qt.DisplayRole, node, 1, Qt.MatchExactly|Qt.MatchRecursive)
+            node = self.model.data(idxlist[0], Qt.UserRole)
         path = node.get_path()
-        print("PATH", path)
         for node in path:
             # FIXME: this would be the correct way if it would work
             #idxlist = self.model.match(self.model.index(0, 0), Qt.UserRole, QVariantnode, 2, Qt.MatchExactly|Qt.MatchRecursive)
