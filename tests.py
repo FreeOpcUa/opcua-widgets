@@ -8,10 +8,26 @@ sys.path.insert(0, ".")
 from opcua import ua, Server
 
 from PyQt5.QtCore import QTimer, QSettings, QModelIndex, Qt, QCoreApplication
-from PyQt5.QtWidgets import QApplication, QTreeView, QAbstractItemDelegate
+from PyQt5.QtWidgets import QApplication, QTreeView, QAbstractItemDelegate, QTableView
 from PyQt5.QtTest import QTest
 
 from uawidgets.attrs_widget import AttrsWidget
+from uawidgets.refs_widget import RefsWidget
+
+
+class TestRefsWidget(unittest.TestCase):
+    def setUp(self):
+        self.server = Server()
+        self.server.set_endpoint("opc.tcp://0.0.0.0:4840/freeopcua/server/")
+        self.server.start()
+        self.widget = RefsWidget(QTableView())
+
+    def tearDown(self):
+        self.server.stop()
+
+    def test_1(self):
+        o = self.server.nodes.objects
+        self.widget.show_refs(o)
 
 
 class TestAttrsWidget(unittest.TestCase):
