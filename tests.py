@@ -65,8 +65,8 @@ class TestAttrsWidget(unittest.TestCase):
             embed()
             raise RuntimeError("Could not get editor widget!, it does not have the focus")
 
-        if hasattr(editor, "current_node"):
-            editor.current_node = val
+        if hasattr(editor, "_current_node"):
+            editor._current_node = val
         elif hasattr(editor, "setCurrentText"):
             editor.setCurrentText(val)
         else:
