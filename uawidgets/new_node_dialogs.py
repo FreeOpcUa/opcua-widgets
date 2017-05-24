@@ -128,7 +128,7 @@ class NewUaVariableDialog(NewNodeBaseDialog):
         self.dataTypeButton = GetNodeButton(self, current_type, base_data_type)
         self.dataTypeButton.value_changed.connect(self._data_type_changed)
         self.layout.addWidget(self.dataTypeButton)
-        self._data_type_changed(self.dataTypeButton.current_node)
+        self._data_type_changed(self.dataTypeButton.get_node())
 
     def _data_type_changed(self, node):
         if node.nodeid in (ua.NodeId(ua.ObjectIds.Structure),
