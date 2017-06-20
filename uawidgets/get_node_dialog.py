@@ -41,9 +41,12 @@ class GetNodeTextButton(QWidget):
             self.lineEdit.setText(node.nodeid.to_string())
 
     def get_node(self):
-        print(self.lineEdit.text())
-        print(Node(self.server, ua.NodeId.from_string(self.lineEdit.text())))
-        return Node(self.server, ua.NodeId.from_string(self.lineEdit.text()))
+        text = self.lineEdit.text()
+        if text and text not in ("None", "Null"):
+            current = ua.NodeId.from_string(text)
+        else:
+            current = ua.NodeId() 
+        return Node(self.server, current)
 
 
 
