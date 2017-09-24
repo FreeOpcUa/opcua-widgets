@@ -64,7 +64,7 @@ class TreeWidget(QObject):
             # FIXME: this would be the correct way if it would work
             #idxlist = self.model.match(self.model.index(0, 0), Qt.UserRole, QVariantnode, 2, Qt.MatchExactly|Qt.MatchRecursive)
             try:
-                text = node.get_display_name().Text.decode()
+                text = node.get_display_name().Text
             except UaError as ex:
                 return
             idxlist = self.model.match(self.model.index(0, 0), Qt.DisplayRole, text, 1, Qt.MatchExactly|Qt.MatchRecursive)
@@ -72,6 +72,7 @@ class TreeWidget(QObject):
                 idx = idxlist[0]
                 self.view.setExpanded(idx, True)
                 self.view.setCurrentIndex(idx)
+                self.view.activated.emit(idx)
 
     def copy_nodeid(self):
         node = self.get_current_node()
@@ -100,7 +101,7 @@ class TreeWidget(QObject):
         idx = self.view.currentIndex()
         idx = idx.sibling(idx.row(), 0)
         it = self.model.itemFromIndex(idx)
-        it.setText(dname.Text.decode())
+        it.setText(dname.Text)
 
     def reload_current(self):
         idx = self.view.currentIndex()
