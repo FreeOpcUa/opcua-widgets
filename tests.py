@@ -18,7 +18,7 @@ from uawidgets.refs_widget import RefsWidget
 class TestRefsWidget(unittest.TestCase):
     def setUp(self):
         self.server = Server()
-        self.server.set_endpoint("opc.tcp://0.0.0.0:4840/freeopcua/server/")
+        self.server.set_endpoint("opc.tcp://0.0.0.0:48409/freeopcua/server/")
         self.server.start()
         self.widget = RefsWidget(QTableView())
 
