@@ -225,7 +225,7 @@ class AttrsWidget(QObject):
 
     def _show_ext_obj(self, item, val):
         item.setText(item.text() + ": " + val.__class__.__name__)
-        for att_name, att_type in val.ua_types.items():
+        for att_name, att_type in val.ua_types:
             member_val = getattr(val, att_name)
             attr = getattr(ua.VariantType, att_type)
             self._show_val(item, val, att_name, member_val, attr)
