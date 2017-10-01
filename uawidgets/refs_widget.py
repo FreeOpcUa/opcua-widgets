@@ -132,7 +132,10 @@ class RefsWidget(QObject):
             self._add_ref_row(ref)
 
     def _add_ref_row(self, ref):
-        typename = ua.ObjectIdNames[ref.ReferenceTypeId.Identifier]
+        if ref.ReferenceTypeId.Identifier in ua.ObjectIdNames:
+            typename = ua.ObjectIdNames[ref.ReferenceTypeId.Identifier]
+        else:
+            typename = str(ref.ReferenceTypeId)
         if ref.NodeId.NamespaceIndex == 0 and ref.NodeId.Identifier in ua.ObjectIdNames:
             nodeid = ua.ObjectIdNames[ref.NodeId.Identifier]
         else:
