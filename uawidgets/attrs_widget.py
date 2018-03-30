@@ -227,6 +227,8 @@ class AttrsWidget(QObject):
         item.setText(item.text() + ": " + val.__class__.__name__)
         for att_name, att_type in val.ua_types:
             member_val = getattr(val, att_name)
+            if att_type.startswith("ListOf"):
+                att_type = att_type[6:]
             attr = getattr(ua.VariantType, att_type)
             self._show_val(item, val, att_name, member_val, attr)
 
