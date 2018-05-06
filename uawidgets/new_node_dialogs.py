@@ -25,9 +25,9 @@ class NewNodeBaseDialog(QDialog):
         uries = server.get_namespace_array()
         for uri in uries:
             self.nsComboBox.addItem(uri)
-        nsidx = int(self.settings.value("last_namespace", len(uries)-1))
-        if nsidx > len(uries)-1:
-            nsidx = len(uries)-1
+        nsidx = int(self.settings.value("last_namespace", len(uries) - 1))
+        if nsidx > len(uries) - 1:
+            nsidx = len(uries) - 1
         self.nsComboBox.setCurrentIndex(nsidx)
         self.layout.addWidget(self.nsComboBox)
 
@@ -118,6 +118,7 @@ class NewUaVariableDialog(NewNodeBaseDialog):
 
         self.valLineEdit = QLineEdit(self)
         self.valLineEdit.setText(str(default_value))
+        self.valLineEdit.setMinimumWidth(100)
         self.layout.addWidget(self.valLineEdit)
 
         base_data_type = server.get_node(ua.ObjectIds.BaseDataType)
@@ -131,13 +132,29 @@ class NewUaVariableDialog(NewNodeBaseDialog):
         self._data_type_changed(self.dataTypeButton.get_node())
 
     def _data_type_changed(self, node):
-        if node.nodeid in (ua.NodeId(ua.ObjectIds.Structure),
-                           ua.NodeId(ua.ObjectIds.Enumeration),
-                           ua.NodeId(ua.ObjectIds.DiagnosticInfo)):
+        if node.nodeid in (
+                ua.NodeId(ua.ObjectIds.Decimal),
+                ua.NodeId(ua.ObjectIds.Float),
+                ua.NodeId(ua.ObjectIds.Double)):
+            self.valLineEdit.setText(str(0.0))
+            self.valLineEdit.setEnabled(True)
+        elif node.nodeid in (
+                ua.NodeId(ua.ObjectIds.UInt16),
+                ua.NodeId(ua.ObjectIds.UInt32),
+                ua.NodeId(ua.ObjectIds.UInt64),
+                ua.NodeId(ua.ObjectIds.Int16),
+                ua.NodeId(ua.ObjectIds.Int32),
+                ua.NodeId(ua.ObjectIds.Int64)):
+            self.valLineEdit.setText(str(0))
+            self.valLineEdit.setEnabled(True)
+        elif node.nodeid in (
+                ua.NodeId(ua.ObjectIds.Structure),
+                ua.NodeId(ua.ObjectIds.Enumeration),
+                ua.NodeId(ua.ObjectIds.DiagnosticInfo)):
             self.valLineEdit.setText("Null")
             self.valLineEdit.setEnabled(False)
         else:
-            #self.valLineEdit.setText("Null")
+            self.valLineEdit.setText("Null")
             self.valLineEdit.setEnabled(True)
 
     def get_args(self):
@@ -238,6 +255,3 @@ class NewUaMethodDialog(NewNodeBaseDialog):
         line.setFrameShape(QFrame.HLine)
         line.setFrameShadow(QFrame.Sunken)
         return line
-
-
-
