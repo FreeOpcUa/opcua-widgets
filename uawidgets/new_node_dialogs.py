@@ -178,17 +178,11 @@ class NewUaMethodDialog(NewNodeBaseDialog):
 
         self.inplayout = QVBoxLayout(self)
         self.vlayout.addLayout(self.inplayout)
-        self.inplayout.addLayout(self.add_header("Inputs"))
-        self.inplayout.addLayout(self.add_row("input"))
-        self.inplayout.addLayout(self.add_row("input"))
-        self.inplayout.addLayout(self.add_row("input"))
+        self.inplayout.addLayout(self.add_input_header())
 
         self.ouplayout = QVBoxLayout(self)
         self.vlayout.addLayout(self.ouplayout)
-        self.ouplayout.addLayout(self.add_header("Outputs"))
-        self.ouplayout.addLayout(self.add_row("output"))
-        self.ouplayout.addLayout(self.add_row("output"))
-        self.ouplayout.addLayout(self.add_row("output"))
+        self.ouplayout.addLayout(self.add_output_header())
 
     def get_args(self):
         nodeid, bname = self.get_nodeid_and_bname()
@@ -243,12 +237,30 @@ class NewUaMethodDialog(NewNodeBaseDialog):
         self.widgets.append([mode, argNameLabel, argDescLabel, dataTypeButton])
         return rowlayout
 
-    def add_header(self, header):
+    def _add_input_row(self):
+        self.inplayout.addLayout(self.add_row("input"))
+
+    def _add_output_row(self):
+        self.ouplayout.addLayout(self.add_row("output"))
+
+    def add_input_header(self):
         header_row = QHBoxLayout(self)
-        header_row.addWidget(QLabel(header, self))
-        header_row.addWidget(self.add_h_line())
-        # header_row.addWidget(QLabel("+ button", self))  # FIXME this needs to be a button which triggers add_row()
+        header_row.addWidget(QLabel("Input", self))
+        #header_row.addWidget(self.add_h_line())
+        button = QPushButton("Add input argument")
+        button.clicked.connect(self._add_input_row)
+        header_row.addWidget(button)
         return header_row
+
+    def add_output_header(self):
+        header_row = QHBoxLayout(self)
+        header_row.addWidget(QLabel("Output", self))
+        #header_row.addWidget(self.add_h_line())
+        button = QPushButton("Add output argument")
+        header_row.addWidget(button)
+        button.clicked.connect(self._add_output_row)
+        return header_row
+
 
     def add_h_line(self):
         line = QFrame()
