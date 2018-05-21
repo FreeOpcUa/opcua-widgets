@@ -1,18 +1,14 @@
 from PyQt5.QtCore import QSettings, Qt
 from PyQt5.QtWidgets import QPushButton, QComboBox, QLabel, QLineEdit, QHBoxLayout, QDialog, QDialogButtonBox, QVBoxLayout, QCheckBox, QFrame
 
-from opcua import ua, Node
-from opcua.common.ua_utils import string_to_variant
-from opcua.common.ua_utils import data_type_to_variant_type
-
-from uawidgets.get_node_dialog import GetNodeButton
+from opcua.common.ua_utils import val_to_string, string_to_val, data_type_to_variant_type
+from opcua.common.methods import call_method_full
 
 
 class CallMethodDialog(QDialog):
     def __init__(self, parent, server, node):
         QDialog.__init__(self, parent)
         self.setWindowTitle("UA Method Call")
-        self.settings = QSettings()
         self.server = server
         self.node = node
 
@@ -50,13 +46,16 @@ class CallMethodDialog(QDialog):
         layout.addWidget(call_button)
 
     def _call(self):
-        parent = node.get_parent()
+        parent = self.node.get_parent()
         args = []
         for inp in self.inputs:
-            pass
+            val = string_to_val(inp.text(), data_type_to_variant_type(inp.data_type))
+            args.append(val)
 
+        result = call_method_full(parent, self.node, *args)
 
-
+        for idx, res in enumerate(result.OutputArguments):
+            self.outputs[idx].setText(val_to_string(res))
 
     def _add_input(self, arg):
         layout = QHBoxLayout()
@@ -66,6 +65,7 @@ class CallMethodDialog(QDialog):
         layout.addWidget(QLabel("Data type:{}".format(arg.DataType), self))
         layout.addWidget(QLabel("Description:{}".format(arg.Description), self))
         lineedit = QLineEdit(self)
+        lineedit.data_type = self.server.get_node(arg.DataType)
         self.inputs.append(lineedit)
         layout.addWidget(lineedit)
 
@@ -73,6 +73,7 @@ class CallMethodDialog(QDialog):
         layout = QHBoxLayout()
         self.vlayout.addLayout(layout)
         layout.addWidget(QLabel("Output:", self))
+        layout.addWidget(QLabel("{}".format(arg.DataType)))
         label = QLabel("", self)
         self.outputs.append(label)
         layout.addWidget(label)
