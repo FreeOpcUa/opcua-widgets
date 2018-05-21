@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QApplication, QMenu, QAction, QStyledItemDelegate, Q
 
 from opcua import ua
 from opcua import Node
-from opcua.common.ua_utils import string_to_val, val_to_string
+from opcua.common.ua_utils import string_to_val, val_to_string, data_type_to_string
 
 from uawidgets.get_node_dialog import GetNodeButton
 from uawidgets.utils import trycatchslot
@@ -403,15 +403,6 @@ class MyDelegate(QStyledItemDelegate):
             self.error.emit(ex)
         else:
             self.attr_written.emit(data.attr, dv)
-
-
-def data_type_to_string(dtype):
-    # we could just display browse name of node but it requires a query
-    if dtype.Identifier in ua.ObjectIdNames:
-        string = ua.ObjectIdNames[dtype.Identifier]
-    else:
-        string = dtype.to_string()
-    return string
 
 
 def attr_to_enum(attr):
