@@ -1,7 +1,7 @@
 from PyQt5.QtCore import QSettings, Qt
 from PyQt5.QtWidgets import QPushButton, QComboBox, QLabel, QLineEdit, QHBoxLayout, QDialog, QDialogButtonBox, QVBoxLayout, QCheckBox, QFrame
 
-from opcua.common.ua_utils import val_to_string, string_to_val, data_type_to_variant_type, data_type_to_string
+from opcua.common.ua_utils import val_to_string, string_to_variant, data_type_to_variant_type, data_type_to_string
 from opcua.common.methods import call_method_full
 from opcua import ua
 
@@ -45,10 +45,10 @@ class CallMethodDialog(QDialog):
 
         layout = QHBoxLayout()
         self.vlayout.addLayout(layout)
-
-        cancel_button = QPushButton("Cancel")
-        cancel_button.clicked.connect(self.close)
-        layout.addWidget(cancel_button)
+        layout.addStretch()
+        close_button = QPushButton("Close")
+        close_button.clicked.connect(self.close)
+        layout.addWidget(close_button)
         call_button = QPushButton("Call Method")
         call_button.clicked.connect(self.call)
         layout.addWidget(call_button)
@@ -63,7 +63,7 @@ class CallMethodDialog(QDialog):
         parent = self.node.get_parent()
         args = []
         for inp in self.inputs:
-            val = string_to_val(inp.text(), data_type_to_variant_type(inp.data_type))
+            val = string_to_variant(inp.text(), data_type_to_variant_type(inp.data_type))
             args.append(val)
 
         result = call_method_full(parent, self.node, *args)
@@ -75,7 +75,6 @@ class CallMethodDialog(QDialog):
     def _add_input(self, arg):
         layout = QHBoxLayout()
         self.vlayout.addLayout(layout)
-        layout.addWidget(QLabel("Argument:", self))
         layout.addWidget(QLabel("Name:{}".format(arg.Name), self))
         layout.addWidget(QLabel("Data type:{}".format(data_type_to_string(arg.DataType)), self))
         layout.addWidget(QLabel("Description:{}".format(arg.Description.Text), self))
