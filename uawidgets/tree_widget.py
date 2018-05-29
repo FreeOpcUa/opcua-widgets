@@ -174,7 +174,14 @@ class TreeViewModel(QStandardItemModel):
         return desc
 
     def add_item(self, desc, parent=None, node=None):
-        item = [QStandardItem(desc.DisplayName.to_string()), QStandardItem(desc.BrowseName.to_string()), QStandardItem(desc.NodeId.to_string())]
+        dname = bname = nodeid = "No Value"
+        if desc.DisplayName:
+            dname = desc.DisplayName.to_string()
+        if desc.BrowseName:
+            bname = desc.BrowseName.to_string()
+        if desc.NodeId:
+            nodeid = desc.NodeId.to_string()
+        item = [QStandardItem(dname), QStandardItem(bname), QStandardItem(nodeid)]
         if desc.NodeClass == ua.NodeClass.Object:
             if desc.TypeDefinition == ua.TwoByteNodeId(ua.ObjectIds.FolderType):
                 item[0].setIcon(QIcon(":/folder.svg"))
