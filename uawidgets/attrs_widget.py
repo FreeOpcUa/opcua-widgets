@@ -169,6 +169,7 @@ class AttrsWidget(QObject):
 
     def _show_attr(self, attr, dv):
         if attr == ua.AttributeIds.DataType:
+            # FIXME: Could query for browsename here, it does not cost much
             string = data_type_to_string(dv.Value.Value)
         elif attr in (ua.AttributeIds.AccessLevel,
                       ua.AttributeIds.UserAccessLevel,

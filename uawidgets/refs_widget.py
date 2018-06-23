@@ -165,7 +165,6 @@ class MyDelegate(QStyledItemDelegate):
 
     @trycatchslot
     def createEditor(self, parent, option, idx):
-        print("CREATE EDITOR", parent, option, idx)
         if idx.column() > 1:
             return None
         data_idx = idx.sibling(idx.row(), 0)

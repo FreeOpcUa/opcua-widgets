@@ -179,8 +179,7 @@ class TreeViewModel(QStandardItemModel):
             dname = desc.DisplayName.to_string()
         if desc.BrowseName:
             bname = desc.BrowseName.to_string()
-        if desc.NodeId:
-            nodeid = desc.NodeId.to_string()
+        nodeid = desc.NodeId.to_string()
         item = [QStandardItem(dname), QStandardItem(bname), QStandardItem(nodeid)]
         if desc.NodeClass == ua.NodeClass.Object:
             if desc.TypeDefinition == ua.TwoByteNodeId(ua.ObjectIds.FolderType):
@@ -242,7 +241,8 @@ class TreeViewModel(QStandardItemModel):
 
     def _fetchMore(self, parent):
         try:
-            descs = parent.data(Qt.UserRole).get_children_descriptions()
+            node = parent.data(Qt.UserRole)
+            descs = node.get_children_descriptions()
             descs.sort(key=lambda x: x.BrowseName)
             added = []
             for desc in descs:
