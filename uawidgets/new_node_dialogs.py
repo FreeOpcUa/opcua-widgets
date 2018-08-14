@@ -117,7 +117,6 @@ class NewUaVariableDialog(NewNodeBaseDialog):
         NewNodeBaseDialog.__init__(self, parent, title, server)
 
         self.valLineEdit = QLineEdit(self)
-        self.valLineEdit.setText(str(default_value))
         self.valLineEdit.setMinimumWidth(100)
         self.layout.addWidget(self.valLineEdit)
 
@@ -130,6 +129,7 @@ class NewUaVariableDialog(NewNodeBaseDialog):
         self.dataTypeButton.value_changed.connect(self._data_type_changed)
         self.layout.addWidget(self.dataTypeButton)
         self._data_type_changed(self.dataTypeButton.get_node())
+        self.valLineEdit.setText(str(default_value))
 
     def _data_type_changed(self, node):
         if node.nodeid in (
