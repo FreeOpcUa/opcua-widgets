@@ -62,7 +62,7 @@ class TreeWidget(QObject):
         path = node.get_path()
         for node in path:
             # FIXME: this would be the correct way if it would work
-            #idxlist = self.model.match(self.model.index(0, 0), Qt.UserRole, QVariantnode, 2, Qt.MatchExactly|Qt.MatchRecursive)
+            #idxlist = self.model.match(self.model.index(0, 0), Qt.UserRole, node.node, 2, Qt.MatchExactly|Qt.MatchRecursive)
             try:
                 text = node.get_display_name().Text
             except UaError as ex:
@@ -73,6 +73,9 @@ class TreeWidget(QObject):
                 self.view.setExpanded(idx, True)
                 self.view.setCurrentIndex(idx)
                 self.view.activated.emit(idx)
+            else:
+                # Why do we somethime end up here??!??!??
+                print("Error getting idx for text", node, text)
 
     def copy_nodeid(self):
         node = self.get_current_node()
