@@ -5,7 +5,7 @@ from opcua import ua, Node
 from opcua.common.ua_utils import string_to_variant
 from opcua.common.ua_utils import data_type_to_variant_type
 
-from uawidgets.get_node_dialog import GetNodeButton
+from uawidgets.get_node_dialog import GetNodeButton, GetDataTypeNodeButton
 
 
 class NewNodeBaseDialog(QDialog):
@@ -113,19 +113,14 @@ class NewUaObjectDialog(NewNodeBaseDialog):
 
 
 class NewUaVariableDialog(NewNodeBaseDialog):
-    def __init__(self, parent, title, server, default_value, dtype):
+    def __init__(self, parent, title, server, default_value, dtype=None):
         NewNodeBaseDialog.__init__(self, parent, title, server)
 
         self.valLineEdit = QLineEdit(self)
         self.valLineEdit.setMinimumWidth(100)
         self.layout.addWidget(self.valLineEdit)
 
-        base_data_type = server.get_node(ua.ObjectIds.BaseDataType)
-        if dtype is None:
-            current_type = server.get_node(ua.ObjectIds.Float)
-        else:
-            current_type = server.get_node(dtype)
-        self.dataTypeButton = GetNodeButton(self, current_type, base_data_type)
+        self.dataTypeButton = GetDataTypeNodeButton(self, self.server, self.settings, dtype)
         self.dataTypeButton.value_changed.connect(self._data_type_changed)
         self.layout.addWidget(self.dataTypeButton)
         self._data_type_changed(self.dataTypeButton.get_node())
@@ -172,7 +167,6 @@ class NewUaVariableDialog(NewNodeBaseDialog):
 class NewUaMethodDialog(NewNodeBaseDialog):
     def __init__(self, parent, title, server):
         NewNodeBaseDialog.__init__(self, parent, title, server)
-        # FIXME current temporary UI is fixed; should be changed to listview or treeview object
 
         self.widgets = []
 
@@ -195,19 +189,17 @@ class NewUaMethodDialog(NewNodeBaseDialog):
             name = row[1].text()
             description = row[2].text()
 
-            if name != "":
-                # FIXME arguments need to be created from dynamaic UA
-                method_arg = ua.Argument()
-                method_arg.Name = name
-                method_arg.DataType = dtype.nodeid
-                method_arg.ValueRank = -1
-                method_arg.ArrayDimensions = []
-                method_arg.Description = ua.LocalizedText(description)
+            method_arg = ua.Argument()
+            method_arg.Name = name
+            method_arg.DataType = dtype.nodeid
+            method_arg.ValueRank = -1
+            method_arg.ArrayDimensions = []
+            method_arg.Description = ua.LocalizedText(description)
 
-                if row[0] == 'input':
-                    input_args.append(method_arg)
-                else:
-                    output_args.append(method_arg)
+            if row[0] == 'input':
+                input_args.append(method_arg)
+            else:
+                output_args.append(method_arg)
 
         # callback is None, this cannot be set from modeler
         return nodeid, bname, None, input_args, output_args
@@ -225,13 +217,7 @@ class NewUaMethodDialog(NewNodeBaseDialog):
         argDescLabel.setText("")
         rowlayout.addWidget(argDescLabel)
 
-        base_data_type = self.server.get_node(ua.ObjectIds.BaseDataType)
-        dtype_str = self.settings.value("last_datatype", None)
-        if dtype_str is None:
-            current_type = self.server.get_node(ua.ObjectIds.Float)
-        else:
-            current_type = self.server.get_node(dtype_str)
-        dataTypeButton = GetNodeButton(self, current_type, base_data_type)
+        dataTypeButton = GetDataTypeNodeButton(self, self.server, self.settings)
         rowlayout.addWidget(dataTypeButton)
 
         self.widgets.append([mode, argNameLabel, argDescLabel, dataTypeButton])
@@ -260,7 +246,6 @@ class NewUaMethodDialog(NewNodeBaseDialog):
         header_row.addWidget(button)
         button.clicked.connect(self._add_output_row)
         return header_row
-
 
     def add_h_line(self):
         line = QFrame()

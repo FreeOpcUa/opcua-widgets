@@ -1,4 +1,4 @@
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import pyqtSignal, QSettings
 from PyQt5.QtWidgets import QTreeView, QDialog, QHBoxLayout, QVBoxLayout, QDialogButtonBox, QAbstractItemView, QPushButton, QLineEdit, QWidget
 from PyQt5.QtCore import Qt
 
@@ -39,6 +39,7 @@ class GetNodeTextButton(QWidget):
         node, ok = GetNodeDialog.getNode(self, self.start_node, currentnode=node)
         if ok:
             self.lineEdit.setText(node.nodeid.to_string())
+        return node, ok
 
     def get_node(self):
         text = self.lineEdit.text()
@@ -74,6 +75,7 @@ class GetNodeButton(QPushButton):
             self._current_node = node
             self.setText(self._current_node.get_browse_name().to_string())
             self.value_changed.emit(self._current_node)
+        return node, ok
 
     def get_node(self):
         return self._current_node
@@ -114,3 +116,29 @@ class GetNodeDialog(QDialog):
         result = dialog.exec_()
         node = dialog.get_node()
         return node, result == QDialog.Accepted
+
+
+class GetDataTypeNodeButton(GetNodeButton):
+    """
+    Specialized GetNodeButton for getting a data type
+    Create Button which will query a node
+    """
+
+    def __init__(self, parent, server, settings, dtype=None):
+        self.settings = settings #We pass settings because we cannot create QSettings before __inint__ of super()
+        base_data_type = server.get_node(ua.ObjectIds.BaseDataType)
+        if dtype is None:
+            dtype = self.settings.value("last_datatype", None)
+        if dtype is None:
+            current_type = server.get_node(ua.ObjectIds.Float)
+        else:
+            current_type = server.get_node(dtype)
+        GetNodeButton.__init__(self, parent, current_type, base_data_type)
+
+    def get_new_node(self):
+        node, ok = GetNodeButton.get_new_node(self)
+        if ok:
+            self.settings.setValue("last_datatype", node.nodeid.to_string())
+        return node, ok
+
+
