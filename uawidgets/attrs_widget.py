@@ -133,7 +133,8 @@ class AttrsWidget(QObject):
 
     def get_current_item(self, col_idx=0):
         idx = self.view.currentIndex()
-        return self.model.item(idx.row(), col_idx)
+        idx = idx.siblingAtColumn(col_idx)
+        return self.model.itemFromIndex(idx)
 
     def _copy_value(self, position):
         it = self.get_current_item(1)
