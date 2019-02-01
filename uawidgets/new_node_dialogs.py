@@ -1,3 +1,5 @@
+import uuid
+
 from PyQt5.QtCore import QSettings, Qt
 from PyQt5.QtWidgets import QPushButton, QComboBox, QLabel, QLineEdit, QHBoxLayout, QDialog, QDialogButtonBox, QVBoxLayout, QCheckBox, QFrame
 
@@ -148,6 +150,9 @@ class NewUaVariableDialog(NewNodeBaseDialog):
                 ua.NodeId(ua.ObjectIds.DiagnosticInfo)):
             self.valLineEdit.setText("Null")
             self.valLineEdit.setEnabled(False)
+        elif node.nodeid == ua.NodeId(ua.ObjectIds.Guid):
+            self.valLineEdit.setText(str(uuid.uuid4()))
+            self.valLineEdit.setEnabled(True)
         else:
             self.valLineEdit.setText("Null")
             self.valLineEdit.setEnabled(True)
