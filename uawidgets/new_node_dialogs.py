@@ -115,7 +115,7 @@ class NewUaObjectDialog(NewNodeBaseDialog):
 
 
 class NewUaVariableDialog(NewNodeBaseDialog):
-    def __init__(self, parent, title, server, default_value, dtype=None):
+    def __init__(self, parent, title, server, dtype=None):
         NewNodeBaseDialog.__init__(self, parent, title, server)
 
         self.valLineEdit = QLineEdit(self)
@@ -126,7 +126,6 @@ class NewUaVariableDialog(NewNodeBaseDialog):
         self.dataTypeButton.value_changed.connect(self._data_type_changed)
         self.layout.addWidget(self.dataTypeButton)
         self._data_type_changed(self.dataTypeButton.get_node())
-        self.valLineEdit.setText(str(default_value))
 
     def _data_type_changed(self, node):
         if node.nodeid in (
@@ -152,6 +151,15 @@ class NewUaVariableDialog(NewNodeBaseDialog):
             self.valLineEdit.setEnabled(False)
         elif node.nodeid == ua.NodeId(ua.ObjectIds.Guid):
             self.valLineEdit.setText(str(uuid.uuid4()))
+            self.valLineEdit.setEnabled(True)
+        elif node.nodeid == ua.NodeId(ua.ObjectIds.Boolean):
+            self.valLineEdit.setText("true")
+            self.valLineEdit.setEnabled(True)
+        elif node.nodeid in (ua.NodeId(ua.ObjectIds.NodeId), ua.NodeId(ua.ObjectIds.ExpandedNodeId)):
+            self.valLineEdit.setText("ns=1;i=1000")
+            self.valLineEdit.setEnabled(True)
+        elif node.nodeid == ua.NodeId(ua.ObjectIds.DateTime):
+            self.valLineEdit.setText("2020-01-31T12:00:00")
             self.valLineEdit.setEnabled(True)
         else:
             self.valLineEdit.setText("Null")
