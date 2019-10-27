@@ -58,6 +58,8 @@ class TreeWidget(QObject):
         """
         if isinstance(node, str):
             idxlist = self.model.match(self.model.index(0, 0), Qt.DisplayRole, node, 1, Qt.MatchExactly|Qt.MatchRecursive)
+            if not idxlist:
+                raise ValueError(f"Node {node} not found in tree")
             node = self.model.data(idxlist[0], Qt.UserRole)
         path = node.get_path()
         for node in path:
@@ -74,8 +76,7 @@ class TreeWidget(QObject):
                 self.view.setCurrentIndex(idx)
                 self.view.activated.emit(idx)
             else:
-                # Why do we somethime end up here??!??!??
-                print("Error getting idx for text", node, text)
+                print(f"While expanding tree, Could not find node {node} in tree view, this might be OK")
 
     def copy_nodeid(self):
         node = self.get_current_node()
