@@ -199,10 +199,10 @@ class AttrsWidget(QObject):
         vitem = QStandardItem()
         vitem.setText(val_to_string(val))
         vitem.setData(MemberData(obj, name, val, vtype), Qt.UserRole)
-        row = [name_item, vitem, QStandardItem(vtype.name)]
+        row = [name_item, vitem, QStandardItem(str(vtype))]
         # if we have a list or extension object we display children
         if isinstance(val, list):
-            row[2].setText("List of " + vtype.name)
+            row[2].setText("List of " + str(vtype))
             self._show_list(name_item, val, vtype)
         elif vtype == ua.VariantType.ExtensionObject:
             self._show_ext_obj(name_item, val)
@@ -219,7 +219,7 @@ class AttrsWidget(QObject):
             parent.appendRow(row)
             if vtype == ua.VariantType.ExtensionObject:
                 self._show_ext_obj(name_item, val)
-    
+
     def refresh_list(self, parent, mylist, vtype):
         while parent.hasChildren():
             self.model.removeRow(0, parent.index())
@@ -231,7 +231,12 @@ class AttrsWidget(QObject):
             member_val = getattr(val, att_name)
             if att_type.startswith("ListOf"):
                 att_type = att_type[6:]
-            attr = getattr(ua.VariantType, att_type)
+            if hasattr(ua.VariantType, att_type):
+                attr = getattr(ua.VariantType, att_type)
+            elif hasattr(ua, att_type):
+                attr = getattr(ua, att_type)
+            else:
+                return
             self._show_val(item, val, att_name, member_val, attr)
 
     def _show_timestamps(self, item, dv):
