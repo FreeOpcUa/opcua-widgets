@@ -1,4 +1,5 @@
 import logging
+import functools
 
 from PyQt5.QtCore import pyqtSignal, Qt, QObject, QSettings
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
@@ -13,6 +14,16 @@ from uawidgets.utils import trycatchslot
 
 
 logger = logging.getLogger(__name__)
+
+
+def robust(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception:
+            logger.exception("failed to call %s with args: %s %s", func, args, kwargs)
+    return wrapper
 
 
 class BitEditor(QDialog):
@@ -194,6 +205,7 @@ class AttrsWidget(QObject):
         self.model.appendRow(row)
         self._show_timestamps(name_item, dv)
 
+    @robust
     def _show_val(self, parent, obj, name, val, vtype):
         name_item = QStandardItem(name)
         vitem = QStandardItem()
@@ -209,6 +221,7 @@ class AttrsWidget(QObject):
         parent.appendRow(row)
         return row
 
+    @robust
     def _show_list(self, parent, mylist, vtype):
         for idx, val in enumerate(mylist):
             name_item = QStandardItem(str(idx))
@@ -225,6 +238,7 @@ class AttrsWidget(QObject):
             self.model.removeRow(0, parent.index())
         self._show_list(parent, mylist, vtype)
 
+    @robust
     def _show_ext_obj(self, item, val):
         item.setText(item.text() + ": " + val.__class__.__name__)
         for att_name, att_type in val.ua_types:
