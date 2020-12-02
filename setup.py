@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 
 setup(name="opcua-widgets",
-      version="0.5.9",
+      version="0.5.10",
       description="OPC-UA Widgets",
       author="Olivier R-D et al.",
       url='https://github.com/FreeOpcUa/opcua-widgets',
