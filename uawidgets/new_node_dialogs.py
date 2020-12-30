@@ -3,9 +3,9 @@ import uuid
 from PyQt5.QtCore import QSettings, Qt
 from PyQt5.QtWidgets import QPushButton, QComboBox, QLabel, QLineEdit, QHBoxLayout, QDialog, QDialogButtonBox, QVBoxLayout, QCheckBox, QFrame
 
-from opcua import ua, Node
-from opcua.common.ua_utils import string_to_variant
-from opcua.common.ua_utils import data_type_to_variant_type
+from asyncua import ua
+from asyncua.common.ua_utils import string_to_variant
+from asyncua.common.ua_utils import data_type_to_variant_type
 
 from uawidgets.get_node_dialog import GetNodeButton, GetDataTypeNodeButton
 

@@ -1,9 +1,12 @@
-from PyQt5.QtCore import QSettings, Qt
-from PyQt5.QtWidgets import QPushButton, QComboBox, QLabel, QLineEdit, QHBoxLayout, QDialog, QDialogButtonBox, QVBoxLayout, QCheckBox, QFrame
+import logging
 
-from opcua.common.ua_utils import val_to_string, string_to_variant, data_type_to_variant_type, data_type_to_string
-from opcua.common.methods import call_method_full
-from opcua import ua
+from PyQt5.QtWidgets import QPushButton, QLabel, QLineEdit, QHBoxLayout, QDialog, QVBoxLayout
+
+from asyncua.common.ua_utils import val_to_string, string_to_variant, data_type_to_string
+from asyncua.sync import call_method_full, data_type_to_variant_type
+from asyncua import ua
+
+logger = logging.getLogger(__name__)
 
 
 class CallMethodDialog(QDialog):
@@ -26,6 +29,7 @@ class CallMethodDialog(QDialog):
             for arg in args:
                 self._add_input(arg)
         except ua.UaError as ex:
+            logger.exception("Error reading input arguments")
             print(ex)
 
         layout = QHBoxLayout()
@@ -41,6 +45,7 @@ class CallMethodDialog(QDialog):
             for arg in args:
                 self._add_output(arg)
         except ua.UaError as ex:
+            logger.exception("Error reading ouput arguments")
             print(ex)
 
         layout = QHBoxLayout()
@@ -52,21 +57,22 @@ class CallMethodDialog(QDialog):
         call_button = QPushButton("Call Method")
         call_button.clicked.connect(self.call)
         layout.addWidget(call_button)
-    
+
     def call(self):
         try:
             self._call()
         except Exception as ex:
+            logger.exception("Error calling method")
             self.result_label.setText(str(ex))
 
     def _call(self):
         parent = self.node.get_parent()
         args = []
         for inp in self.inputs:
-            val = string_to_variant(inp.text(), data_type_to_variant_type(inp.data_type))
+            val = string_to_variant(inp.text(), data_type_to_variant_type(self.node.tloop, inp.data_type))
             args.append(val)
 
-        result = call_method_full(parent, self.node, *args)
+        result = call_method_full(self.node.tloop, parent, self.node, *args)
         self.result_label.setText(str(result.StatusCode))
 
         for idx, res in enumerate(result.OutputArguments):

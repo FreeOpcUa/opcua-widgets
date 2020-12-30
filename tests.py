@@ -1,15 +1,10 @@
 
 import unittest
 import sys
-import time
-sys.path.insert(0, "python-opcua")  # necessary on travis
-sys.path.insert(0, ".")
 
-from opcua import ua, Server
-
-from PyQt5.QtCore import QTimer, QSettings, QModelIndex, Qt, QCoreApplication
+from asyncua import ua, Server
+from PyQt5 import Qt
 from PyQt5.QtWidgets import QApplication, QTreeView, QAbstractItemDelegate, QTableView
-from PyQt5.QtTest import QTest
 
 from uawidgets.attrs_widget import AttrsWidget
 from uawidgets.refs_widget import RefsWidget
@@ -61,7 +56,7 @@ class TestAttrsWidget(unittest.TestCase):
             print(app.focusWidget())
             print("NO EDITOR WIDGET")
             #QTest.keyClick(self.widget.view, Qt.Key_Return)
-            from IPython import embed 
+            from IPython import embed
             embed()
             raise RuntimeError("Could not get editor widget!, it does not have the focus")
 

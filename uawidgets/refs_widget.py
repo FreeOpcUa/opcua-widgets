@@ -1,11 +1,11 @@
 import logging
-from copy import copy
 
 from PyQt5.QtCore import pyqtSignal, QObject, QSettings, Qt
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QMenu, QAction, QStyledItemDelegate, QAbstractItemView
 
-from opcua import ua, Node
+from asyncua import ua
+from asyncua.sync import Node
 
 from uawidgets.utils import trycatchslot
 from uawidgets.get_node_dialog import GetNodeTextButton
@@ -98,7 +98,7 @@ class RefsWidget(QObject):
         ref = item.data(Qt.UserRole)
         self.do_remove_ref(ref)
         self.reload()
-    
+
     def do_remove_ref(self, ref, check=True):
         logger.info("Removing: %s", ref)
         it = ua.DeleteReferencesItem()
@@ -110,7 +110,7 @@ class RefsWidget(QObject):
         #param = ua.DeleteReferencesParameters()
         #param.ReferencesToDelete.append(it)
         results = self.node.server.delete_references([it])
-        logger.info("Remove result: %s", results[0]) 
+        logger.info("Remove result: %s", results[0])
         if check:
             results[0].check()
 
