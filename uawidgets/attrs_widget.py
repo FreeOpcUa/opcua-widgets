@@ -5,9 +5,9 @@ from PyQt5.QtCore import pyqtSignal, Qt, QObject, QSettings
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QApplication, QMenu, QAction, QStyledItemDelegate, QComboBox, QVBoxLayout, QCheckBox, QDialog, QAbstractItemView
 
-from opcua import ua
-from opcua import Node
-from opcua.common.ua_utils import string_to_val, val_to_string, data_type_to_string
+from asyncua import ua
+from asyncua.sync import Node
+from asyncua.common.ua_utils import string_to_val, val_to_string, data_type_to_string
 
 from uawidgets.get_node_dialog import GetNodeButton
 from uawidgets.utils import trycatchslot
@@ -264,7 +264,7 @@ class AttrsWidget(QObject):
 
     def get_all_attrs(self):
         attrs = [attr for attr in ua.AttributeIds]
-        dvs = self.current_node.get_attributes(attrs)
+        dvs = self.current_node.read_attributes(attrs)
         res = []
         for idx, dv in enumerate(dvs):
             if dv.StatusCode.is_good():
@@ -314,7 +314,6 @@ class MyDelegate(QStyledItemDelegate):
             combo.setCurrentText(text)
             return combo
         elif data.attr == ua.AttributeIds.DataType:
-            #nodeid = getattr(ua.ObjectIds, text)
             nodeid = data.value
             node = Node(self.attrs_widget.current_node.server, nodeid)
             startnode = Node(self.attrs_widget.current_node.server, ua.ObjectIds.BaseDataType)
@@ -328,9 +327,6 @@ class MyDelegate(QStyledItemDelegate):
             return BitEditor(parent, data.attr, data.value)
         else:
             return QStyledItemDelegate.createEditor(self, parent, option, idx)
-
-    #def setEditorData(self, editor, index):
-        #pass
 
     @trycatchslot
     def setModelData(self, editor, model, idx):

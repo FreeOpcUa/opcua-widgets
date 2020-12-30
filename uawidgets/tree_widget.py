@@ -2,9 +2,8 @@ from PyQt5.QtCore import pyqtSignal, QMimeData, QObject, Qt, QSettings
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon
 from PyQt5.QtWidgets import QApplication, QAbstractItemView, QAction
 
-from opcua import ua
-from opcua import Node
-from opcua.ua import UaError
+from asyncua import ua
+from asyncua.sync import new_node
 
 
 class TreeWidget(QObject):
@@ -19,7 +18,6 @@ class TreeWidget(QObject):
         self.model.error.connect(self.error)
         self.view.setModel(self.model)
 
-        #self.view.setUniformRowHeights(True)
         self.model.setHorizontalHeaderLabels(['DisplayName', "BrowseName", 'NodeId'])
         self.view.header().setSectionResizeMode(0)
         self.view.header().setStretchLastSection(True)
@@ -67,7 +65,7 @@ class TreeWidget(QObject):
             #idxlist = self.model.match(self.model.index(0, 0), Qt.UserRole, node.node, 2, Qt.MatchExactly|Qt.MatchRecursive)
             try:
                 text = node.get_display_name().Text
-            except UaError as ex:
+            except ua.UaError as ex:
                 return
             idxlist = self.model.match(self.model.index(0, 0), Qt.DisplayRole, text, 1, Qt.MatchExactly|Qt.MatchRecursive)
             if idxlist:
@@ -168,7 +166,7 @@ class TreeViewModel(QStandardItemModel):
         self.add_item(desc, node=node)
 
     def _get_node_desc(self, node):
-        attrs = node.get_attributes([ua.AttributeIds.DisplayName, ua.AttributeIds.BrowseName, ua.AttributeIds.NodeId, ua.AttributeIds.NodeClass])
+        attrs = node.read_attributes([ua.AttributeIds.DisplayName, ua.AttributeIds.BrowseName, ua.AttributeIds.NodeId, ua.AttributeIds.NodeClass])
         desc = ua.ReferenceDescription()
         desc.DisplayName = attrs[0].Value.Value
         desc.BrowseName = attrs[1].Value.Value
@@ -209,7 +207,7 @@ class TreeViewModel(QStandardItemModel):
             item[0].setData(node, Qt.UserRole)
         else:
             parent_node = parent.data(Qt.UserRole)
-            item[0].setData(Node(parent_node.server, desc.NodeId), Qt.UserRole)
+            item[0].setData(new_node(parent_node, desc.NodeId), Qt.UserRole)
         if parent:
             return parent.appendRow(item)
         else:

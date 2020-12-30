@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 
 setup(name="opcua-widgets",
@@ -8,5 +8,5 @@ setup(name="opcua-widgets",
       url='https://github.com/FreeOpcUa/opcua-widgets',
       packages=["uawidgets"],
       license="GNU General Public License",
-      install_requires=["opcua"],
+      install_requires=["asyncua"],
       )

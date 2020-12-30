@@ -1,8 +1,9 @@
-from PyQt5.QtCore import pyqtSignal, QSettings
+from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QTreeView, QDialog, QHBoxLayout, QVBoxLayout, QDialogButtonBox, QAbstractItemView, QPushButton, QLineEdit, QWidget
 from PyQt5.QtCore import Qt
 
-from opcua import Node, ua
+from asyncua import ua
+from asyncua.sync import Node
 
 from uawidgets.tree_widget import TreeWidget
 
@@ -14,7 +15,6 @@ class GetNodeTextButton(QWidget):
 
     def __init__(self, parent, currentnode, startnode):
         QWidget.__init__(self, parent)
-        #QWidget.__init__(self)
         if currentnode.nodeid.is_null():
             text = "Null"
         else:
@@ -46,9 +46,8 @@ class GetNodeTextButton(QWidget):
         if text and text not in ("None", "Null"):
             current = ua.NodeId.from_string(text)
         else:
-            current = ua.NodeId() 
+            current = ua.NodeId()
         return Node(self.server, current)
-
 
 
 class GetNodeButton(QPushButton):
@@ -86,7 +85,7 @@ class GetNodeDialog(QDialog):
         QDialog.__init__(self, parent)
 
         layout = QVBoxLayout(self)
-        
+
         self.treeview = QTreeView(self)
         self.treeview.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.tree = TreeWidget(self.treeview)
@@ -106,7 +105,6 @@ class GetNodeDialog(QDialog):
         if currentnode:
             self.tree.expand_to_node(currentnode)
 
-
     def get_node(self):
         return self.tree.get_current_node()
 
@@ -125,7 +123,8 @@ class GetDataTypeNodeButton(GetNodeButton):
     """
 
     def __init__(self, parent, server, settings, dtype=None):
-        self.settings = settings #We pass settings because we cannot create QSettings before __inint__ of super()
+        # We pass settings because we cannot create QSettings before __init__ of super()
+        self.settings = settings
         base_data_type = server.get_node(ua.ObjectIds.BaseDataType)
         if dtype is None:
             dtype = self.settings.value("last_datatype", None)
@@ -140,5 +139,3 @@ class GetDataTypeNodeButton(GetNodeButton):
         if ok:
             self.settings.setValue("last_datatype", node.nodeid.to_string())
         return node, ok
-
-
