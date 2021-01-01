@@ -60,7 +60,7 @@ class GetNodeButton(QPushButton):
     def __init__(self, parent, currentnode, startnode):
         text = "Null"
         try:
-            text = currentnode.get_browse_name().to_string()
+            text = currentnode.read_browse_name().to_string()
         except ua.UaError:
             pass
         QPushButton.__init__(self, text, parent)
@@ -72,7 +72,7 @@ class GetNodeButton(QPushButton):
         node, ok = GetNodeDialog.getNode(self, self.start_node, currentnode=self._current_node)
         if ok:
             self._current_node = node
-            self.setText(self._current_node.get_browse_name().to_string())
+            self.setText(self._current_node.read_browse_name().to_string())
             self.value_changed.emit(self._current_node)
         return node, ok
 

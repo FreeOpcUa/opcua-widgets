@@ -88,7 +88,7 @@ class TreeWidget(QObject):
         path = []
         while it and it.data(Qt.UserRole):
             node = it.data(Qt.UserRole)
-            name = node.get_browse_name().to_string()
+            name = node.read_browse_name().to_string()
             path.insert(0, name)
             it = it.parent()
         return path

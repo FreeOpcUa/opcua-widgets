@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QPushButton, QComboBox, QLabel, QLineEdit, QHBoxLayo
 
 from asyncua import ua
 from asyncua.common.ua_utils import string_to_variant
-from asyncua.common.ua_utils import data_type_to_variant_type
+from asyncua.sync import data_type_to_variant_type
 
 from uawidgets.get_node_dialog import GetNodeButton, GetDataTypeNodeButton
 
