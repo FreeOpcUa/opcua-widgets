@@ -77,7 +77,7 @@ class TestAttrsWidget(unittest.TestCase):
         objects = self.server.nodes.objects
         self.widget.show_attrs(objects)
         self.modify_item("BrowseName", "5:titi")
-        self.assertEqual(objects.get_browse_name().to_string(), "5:titi")
+        self.assertEqual(objects.read_browse_name().to_string(), "5:titi")
         self.modify_item("BrowseName", "0:Objects")  # restore states for other tests
 
     def test_display_var_double(self):
@@ -85,36 +85,36 @@ class TestAttrsWidget(unittest.TestCase):
         myvar = objects.add_variable(1, "myvar1", 9.99, ua.VariantType.Double)
         self.widget.show_attrs(myvar)
         self.modify_value("8.45")
-        self.assertEqual(myvar.get_value(), 8.45)
+        self.assertEqual(myvar.read_value(), 8.45)
 
     def test_display_var_bytes(self):
         objects = self.server.nodes.objects
         myvar = objects.add_variable(1, "myvar_bytes", b"jkl", ua.VariantType.ByteString)
         self.widget.show_attrs(myvar)
         self.modify_value("titi")
-        self.assertEqual(myvar.get_value(), b"titi")
+        self.assertEqual(myvar.read_value(), b"titi")
 
     def test_change_data_type(self):
         objects = self.server.nodes.objects
         myvar = objects.add_variable(1, "myvar1", 9.99, ua.VariantType.Double)
         self.widget.show_attrs(myvar)
-        dtype = myvar.get_data_type()
+        dtype = myvar.read_data_type()
         self.assertEqual(dtype, ua.NodeId(ua.ObjectIds.Double))
         new_dtype = ua.NodeId(ua.ObjectIds.String)
         self.modify_item("DataType", self.server.get_node(new_dtype))
-        self.assertEqual(myvar.get_data_type(), new_dtype)
+        self.assertEqual(myvar.read_data_type(), new_dtype)
 
         # now try to write a value which is a string
         self.modify_value("mystring")
-        self.assertEqual(myvar.get_value(), "mystring")
+        self.assertEqual(myvar.read_value(), "mystring")
 
     def test_change_value_rank(self):  # need to find a way to modify combo box with QTest
         objects = self.server.nodes.objects
         myvar = objects.add_variable(1, "myvar1", 9.99, ua.VariantType.Double)
         self.widget.show_attrs(myvar)
-        rank = myvar.get_value_rank()
+        rank = myvar.read_value_rank()
         self.modify_item("ValueRank", "ThreeDimensions")
-        self.assertEqual(myvar.get_value_rank(), ua.ValueRank.ThreeDimensions)
+        self.assertEqual(myvar.read_value_rank(), ua.ValueRank.ThreeDimensions)
 
 
 

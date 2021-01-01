@@ -25,7 +25,7 @@ class CallMethodDialog(QDialog):
         self.vlayout.addWidget(QLabel("Input Arguments:", self))
         try:
             inputs = node.get_child("0:InputArguments")
-            args = inputs.get_value()
+            args = inputs.read_value()
             for arg in args:
                 self._add_input(arg)
         except ua.UaError as ex:
@@ -41,7 +41,7 @@ class CallMethodDialog(QDialog):
         self.vlayout.addWidget(QLabel("Output Arguments:", self))
         try:
             outputs = node.get_child("0:OutputArguments")
-            args = outputs.get_value()
+            args = outputs.read_value()
             for arg in args:
                 self._add_output(arg)
         except ua.UaError as ex:
@@ -69,10 +69,10 @@ class CallMethodDialog(QDialog):
         parent = self.node.get_parent()
         args = []
         for inp in self.inputs:
-            val = string_to_variant(inp.text(), data_type_to_variant_type(self.node.tloop, inp.data_type))
+            val = string_to_variant(inp.text(), data_type_to_variant_type(inp.data_type))
             args.append(val)
 
-        result = call_method_full(self.node.tloop, parent, self.node, *args)
+        result = call_method_full(parent, self.node, *args)
         self.result_label.setText(str(result.StatusCode))
 
         for idx, res in enumerate(result.OutputArguments):

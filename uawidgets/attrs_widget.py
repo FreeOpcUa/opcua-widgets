@@ -334,7 +334,7 @@ class MyDelegate(QStyledItemDelegate):
         data = model.data(idx, Qt.UserRole)
 
         if isinstance(data, AttributeData):
-            self._set_attribute_data(data, editor, model, idx)
+            self._write_attribute_data(data, editor, model, idx)
         elif isinstance(data, MemberData):
             self._set_member_data(data, editor, model, idx)
         elif isinstance(data, ListData):
@@ -370,12 +370,12 @@ class MyDelegate(QStyledItemDelegate):
         it = model.itemFromIndex(parent_idx.sibling(0, 1))
         return parent_idx, it.data(Qt.UserRole)
 
-    def _set_attribute_data(self, data, editor, model, idx):
+    def _write_attribute_data(self, data, editor, model, idx):
         if data.attr is ua.AttributeIds.Value:
             #for value we checkd data type from the variable data type
             # this is more robust
             try:
-                data.uatype = self.attrs_widget.current_node.get_data_type_as_variant_type()
+                data.uatype = self.attrs_widget.current_node.read_data_type_as_variant_type()
             except Exception as ex:
                 logger.exception("Could get primitive type of variable %s", self.attrs_widget.current_node)
                 self.error.emit(ex)
@@ -414,7 +414,7 @@ class MyDelegate(QStyledItemDelegate):
         dv = ua.DataValue(ua.Variant(data.value, varianttype=data.uatype))
         try:
             logger.info("Writing attribute %s of node %s with value: %s", data.attr, self.attrs_widget.current_node, dv)
-            self.attrs_widget.current_node.set_attribute(data.attr, dv)
+            self.attrs_widget.current_node.write_attribute(data.attr, dv)
         except Exception as ex:
             logger.exception("Exception while writing %s to %s", dv, data.attr)
             self.error.emit(ex)
