@@ -64,7 +64,7 @@ class TreeWidget(QObject):
             # FIXME: this would be the correct way if it would work
             #idxlist = self.model.match(self.model.index(0, 0), Qt.UserRole, node.node, 2, Qt.MatchExactly|Qt.MatchRecursive)
             try:
-                text = node.get_display_name().Text
+                text = node.read_display_name().Text
             except ua.UaError as ex:
                 return
             idxlist = self.model.match(self.model.index(0, 0), Qt.DisplayRole, text, 1, Qt.MatchExactly|Qt.MatchRecursive)

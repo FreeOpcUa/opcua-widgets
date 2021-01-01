@@ -6,7 +6,7 @@ from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QApplication, QMenu, QAction, QStyledItemDelegate, QComboBox, QVBoxLayout, QCheckBox, QDialog, QAbstractItemView
 
 from asyncua import ua
-from asyncua.sync import Node
+from asyncua.sync import SyncNode
 from asyncua.common.ua_utils import string_to_val, val_to_string, data_type_to_string
 
 from uawidgets.get_node_dialog import GetNodeButton
@@ -241,6 +241,9 @@ class AttrsWidget(QObject):
     @robust
     def _show_ext_obj(self, item, val):
         item.setText(item.text() + ": " + val.__class__.__name__)
+        if val is None:
+            self._show_val(item, val, "Value", None, ua.VariantType.Null)
+            return
         for att_name, att_type in val.ua_types:
             member_val = getattr(val, att_name)
             if att_type.startswith("ListOf"):
@@ -260,7 +263,6 @@ class AttrsWidget(QObject):
         item.appendRow([QStandardItem("Server Timestamp"), QStandardItem(string), QStandardItem(ua.VariantType.DateTime.name)])
         string = val_to_string(dv.SourceTimestamp)
         item.appendRow([QStandardItem("Source Timestamp"), QStandardItem(string), QStandardItem(ua.VariantType.DateTime.name)])
-
 
     def get_all_attrs(self):
         attrs = [attr for attr in ua.AttributeIds]
@@ -315,8 +317,8 @@ class MyDelegate(QStyledItemDelegate):
             return combo
         elif data.attr == ua.AttributeIds.DataType:
             nodeid = data.value
-            node = Node(self.attrs_widget.current_node.server, nodeid)
-            startnode = Node(self.attrs_widget.current_node.server, ua.ObjectIds.BaseDataType)
+            node = SyncNode(self.attrs_widget.current_node.server, nodeid)
+            startnode = SyncNode(self.attrs_widget.current_node.server, ua.ObjectIds.BaseDataType)
             button = GetNodeButton(parent, node, startnode)
             return button
         elif data.attr in (ua.AttributeIds.AccessLevel,

@@ -5,7 +5,7 @@ from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QMenu, QAction, QStyledItemDelegate, QAbstractItemView
 
 from asyncua import ua
-from asyncua.sync import Node
+from asyncua.sync import SyncNode
 
 from uawidgets.utils import trycatchslot
 from uawidgets.get_node_dialog import GetNodeTextButton
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class RefsWidget(QObject):
 
     error = pyqtSignal(Exception)
-    reference_changed = pyqtSignal(Node)
+    reference_changed = pyqtSignal(SyncNode)
 
     def __init__(self, view):
         self.view = view
@@ -157,7 +157,7 @@ class RefsWidget(QObject):
 class MyDelegate(QStyledItemDelegate):
 
     error = pyqtSignal(Exception)
-    reference_changed = pyqtSignal(Node)
+    reference_changed = pyqtSignal(SyncNode)
 
     def __init__(self, parent, widget):
         QStyledItemDelegate.__init__(self, parent)
@@ -171,13 +171,13 @@ class MyDelegate(QStyledItemDelegate):
         item = self._widget.model.itemFromIndex(data_idx)
         ref = item.data(Qt.UserRole)
         if idx.column() == 1:
-            node = Node(self._widget.node.server, ref.NodeId)
-            startnode = Node(self._widget.node.server, ua.ObjectIds.RootFolder)
+            node = SyncNode(self._widget.node.server, ref.NodeId)
+            startnode = SyncNode(self._widget.node.server, ua.ObjectIds.RootFolder)
             button = GetNodeTextButton(parent, node, startnode)
             return button
         elif idx.column() == 0:
-            node = Node(self._widget.node.server, ref.ReferenceTypeId)
-            startnode = Node(self._widget.node.server, ua.ObjectIds.ReferenceTypesFolder)
+            node = SyncNode(self._widget.node.server, ref.ReferenceTypeId)
+            startnode = SyncNode(self._widget.node.server, ua.ObjectIds.ReferenceTypesFolder)
             button = GetNodeTextButton(parent, node, startnode)
             return button
 
