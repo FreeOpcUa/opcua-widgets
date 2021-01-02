@@ -1,5 +1,6 @@
 import logging
 import functools
+from enum import Enum
 
 from PyQt5.QtCore import pyqtSignal, Qt, QObject, QSettings
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
@@ -173,6 +174,8 @@ class AttrsWidget(QObject):
                 # try/except to show as many attributes as possible
                 if attr == ua.AttributeIds.Value:
                     self._show_value_attr(attr, dv)
+                elif attr == ua.AttributeIds.DataTypeDefinition:
+                    self._show_sdef_attr(attr, dv)
                 else:
                     self._show_attr(attr, dv)
             except Exception as ex:
@@ -205,6 +208,12 @@ class AttrsWidget(QObject):
         self.model.appendRow(row)
         self._show_timestamps(name_item, dv)
 
+    def _show_sdef_attr(self, attr, dv):
+        if dv.Value.Value is None:
+            return
+        items = self._show_val(self.model, None, "DataTypeDefinition", dv.Value.Value, dv.Value.VariantType)
+        items[1].setData(AttributeData(attr, dv.Value.Value, dv.Value.VariantType), Qt.UserRole)
+
     @robust
     def _show_val(self, parent, obj, name, val, vtype):
         name_item = QStandardItem(name)
@@ -228,9 +237,10 @@ class AttrsWidget(QObject):
             vitem = QStandardItem()
             vitem.setText(val_to_string(val))
             vitem.setData(ListData(mylist, idx, val, vtype), Qt.UserRole)
-            row = [name_item, vitem, QStandardItem(vtype.name)]
+            vtypename = vtype.name if isinstance(vtype, Enum) else str(vtype)
+            row = [name_item, vitem, QStandardItem(vtypename)]
             parent.appendRow(row)
-            if vtype == ua.VariantType.ExtensionObject:
+            if vtype == ua.VariantType.ExtensionObject or not isinstance(vtype, ua.VariantType):
                 self._show_ext_obj(name_item, val)
 
     def refresh_list(self, parent, mylist, vtype):
