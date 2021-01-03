@@ -5,7 +5,7 @@ from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QMenu, QAction, QStyledItemDelegate, QAbstractItemView
 
 from asyncua import ua
-from asyncua.sync import SyncNode
+from asyncua.sync import SyncNode, new_node
 
 from uawidgets.utils import trycatchslot
 from uawidgets.get_node_dialog import GetNodeTextButton
@@ -136,10 +136,9 @@ class RefsWidget(QObject):
             typename = ua.ObjectIdNames[ref.ReferenceTypeId.Identifier]
         else:
             typename = str(ref.ReferenceTypeId)
+        nodeid = ref.NodeId.to_string()
         if ref.NodeId.NamespaceIndex == 0 and ref.NodeId.Identifier in ua.ObjectIdNames:
-            nodeid = ua.ObjectIdNames[ref.NodeId.Identifier]
-        else:
-            nodeid = ref.NodeId.to_string()
+            nodeid += ": " + ua.ObjectIdNames[ref.NodeId.Identifier]
         if ref.TypeDefinition.Identifier in ua.ObjectIdNames:
             typedef = ua.ObjectIdNames[ref.TypeDefinition.Identifier]
         else:
@@ -171,13 +170,13 @@ class MyDelegate(QStyledItemDelegate):
         item = self._widget.model.itemFromIndex(data_idx)
         ref = item.data(Qt.UserRole)
         if idx.column() == 1:
-            node = SyncNode(self._widget.node.server, ref.NodeId)
-            startnode = SyncNode(self._widget.node.server, ua.ObjectIds.RootFolder)
+            node = new_node(self._widget.node, ref.NodeId)
+            startnode = new_node(self._widget.node, ua.ObjectIds.RootFolder)
             button = GetNodeTextButton(parent, node, startnode)
             return button
         elif idx.column() == 0:
-            node = SyncNode(self._widget.node.server, ref.ReferenceTypeId)
-            startnode = SyncNode(self._widget.node.server, ua.ObjectIds.ReferenceTypesFolder)
+            node = new_node(self._widget.node, ref.ReferenceTypeId)
+            startnode = new_node(self._widget.node, ua.ObjectIds.ReferenceTypesFolder)
             button = GetNodeTextButton(parent, node, startnode)
             return button
 
