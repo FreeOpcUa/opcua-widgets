@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import QTreeView, QDialog, QHBoxLayout, QVBoxLayout, QDialo
 from PyQt5.QtCore import Qt
 
 from asyncua import ua
-from asyncua.sync import SyncNode
+from asyncua.sync import new_node, SyncNode
 
 from uawidgets.tree_widget import TreeWidget
 
@@ -30,7 +30,6 @@ class GetNodeTextButton(QWidget):
         self.layout.addWidget(self.lineEdit)
         self.layout.addWidget(self.button)
         self.setLayout(self.layout)
-        self.server = currentnode.server
         self.start_node = startnode
         self.button.clicked.connect(self.get_new_node)
 
@@ -47,7 +46,7 @@ class GetNodeTextButton(QWidget):
             current = ua.NodeId.from_string(text)
         else:
             current = ua.NodeId()
-        return SyncNode(self.server, current)
+        return new_node(self.current_node, current)
 
 
 class GetNodeButton(QPushButton):
