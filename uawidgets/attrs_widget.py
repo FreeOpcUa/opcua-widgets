@@ -7,7 +7,7 @@ from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QApplication, QMenu, QAction, QStyledItemDelegate, QComboBox, QVBoxLayout, QCheckBox, QDialog, QAbstractItemView
 
 from asyncua import ua
-from asyncua.sync import SyncNode
+from asyncua.sync import new_node
 from asyncua.common.ua_utils import string_to_val, val_to_string, data_type_to_string
 
 from uawidgets.get_node_dialog import GetNodeButton
@@ -327,8 +327,8 @@ class MyDelegate(QStyledItemDelegate):
             return combo
         elif data.attr == ua.AttributeIds.DataType:
             nodeid = data.value
-            node = SyncNode(self.attrs_widget.current_node.server, nodeid)
-            startnode = SyncNode(self.attrs_widget.current_node.server, ua.ObjectIds.BaseDataType)
+            node = new_node(self.attrs_widget.current_node, nodeid)
+            startnode = new_node(self.attrs_widget.current_node, ua.ObjectIds.BaseDataType)
             button = GetNodeButton(parent, node, startnode)
             return button
         elif data.attr in (ua.AttributeIds.AccessLevel,
