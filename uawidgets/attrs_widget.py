@@ -1,6 +1,7 @@
 import logging
 import functools
 from enum import Enum
+from dataclasses import fields
 
 from PyQt5.QtCore import pyqtSignal, Qt, QObject, QSettings
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
@@ -9,6 +10,7 @@ from PyQt5.QtWidgets import QApplication, QMenu, QAction, QStyledItemDelegate, Q
 from asyncua import ua
 from asyncua.sync import new_node
 from asyncua.common.ua_utils import string_to_val, val_to_string, data_type_to_string
+from asyncua.ua.uatypes import type_string_from_type
 
 from uawidgets.get_node_dialog import GetNodeButton
 from uawidgets.utils import trycatchslot
@@ -254,17 +256,16 @@ class AttrsWidget(QObject):
         if val is None:
             self._show_val(item, val, "Value", None, ua.VariantType.Null)
             return
-        for att_name, att_type in val.ua_types:
-            member_val = getattr(val, att_name)
-            if att_type.startswith("ListOf"):
-                att_type = att_type[6:]
+        for field in fields(val):
+            member_val = getattr(val, field.name)
+            att_type = type_string_from_type(field.type)
             if hasattr(ua.VariantType, att_type):
                 attr = getattr(ua.VariantType, att_type)
             elif hasattr(ua, att_type):
                 attr = getattr(ua, att_type)
             else:
                 return
-            self._show_val(item, val, att_name, member_val, attr)
+            self._show_val(item, val, field.name, member_val, attr)
 
     def _show_timestamps(self, item, dv):
         #while item.hasChildren():

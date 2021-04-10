@@ -62,10 +62,10 @@ class TreeWidget(QObject):
         path = node.get_path()
         for node in path:
             # FIXME: this would be the correct way if it would work
-            #idxlist = self.model.match(self.model.index(0, 0), Qt.UserRole, node.node, 2, Qt.MatchExactly|Qt.MatchRecursive)
+            # idxlist = self.model.match(self.model.index(0, 0), Qt.UserRole, node.node, 2, Qt.MatchExactly|Qt.MatchRecursive)
             try:
                 text = node.read_display_name().Text
-            except ua.UaError as ex:
+            except ua.UaError:
                 return
             idxlist = self.model.match(self.model.index(0, 0), Qt.DisplayRole, text, 1, Qt.MatchExactly|Qt.MatchRecursive)
             if idxlist:
@@ -178,7 +178,7 @@ class TreeViewModel(QStandardItemModel):
     def add_item(self, desc, parent=None, node=None):
         dname = bname = nodeid = "No Value"
         if desc.DisplayName:
-            dname = desc.DisplayName.to_string()
+            dname = desc.DisplayName.Text
         if desc.BrowseName:
             bname = desc.BrowseName.to_string()
         nodeid = desc.NodeId.to_string()
