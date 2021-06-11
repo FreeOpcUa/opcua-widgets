@@ -424,7 +424,7 @@ class MyDelegate(QStyledItemDelegate):
             self.attrs_widget.refresh_list(item, data.value, data.uatype)
 
     def _write_attr(self, data):
-        dv = ua.DataValue(ua.Variant(data.value, varianttype=data.uatype))
+        dv = ua.DataValue(ua.Variant(data.value, VariantType=data.uatype))
         try:
             logger.info("Writing attribute %s of node %s with value: %s", data.attr, self.attrs_widget.current_node, dv)
             self.attrs_widget.current_node.write_attribute(data.attr, dv)
