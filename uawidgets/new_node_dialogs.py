@@ -79,7 +79,7 @@ class NewNodeBaseDialog(QDialog):
         name = self.nameLabel.text()
         bname = ua.QualifiedName(name, ns)
         if self.nodeidCheckBox.isChecked():
-            nodeid = ua.NodeId(namespaceidx=ns)
+            nodeid = ua.NodeId(NamespaceIndex=ns)
         else:
             nodeid = ua.NodeId.from_string(self.nodeidLineEdit.text())
         return nodeid, bname
