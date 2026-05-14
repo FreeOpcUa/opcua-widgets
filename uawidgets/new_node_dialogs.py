@@ -1,27 +1,40 @@
 import uuid
+from typing import Any
 
 from PyQt6.QtCore import QSettings, Qt
-from PyQt6.QtWidgets import QPushButton, QComboBox, QLabel, QLineEdit, QHBoxLayout, QDialog, QDialogButtonBox, QVBoxLayout, QCheckBox, QFrame
+from PyQt6.QtWidgets import (
+    QCheckBox,
+    QComboBox,
+    QDialog,
+    QDialogButtonBox,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from asyncua import ua
 from asyncua.common.ua_utils import string_to_variant
-from asyncua.sync import data_type_to_variant_type
+from asyncua.sync import SyncNode, data_type_to_variant_type
 
-from uawidgets.get_node_dialog import GetNodeButton, GetDataTypeNodeButton
+from uawidgets.get_node_dialog import GetDataTypeNodeButton, GetNodeButton
 
 
 class NewNodeBaseDialog(QDialog):
-    def __init__(self, parent, title, server):
+    def __init__(self, parent: QWidget | None, title: str, server: SyncNode) -> None:
         QDialog.__init__(self, parent)
         self.setWindowTitle(title)
         self.settings = QSettings()
         self.server = server
 
         self.vlayout = QVBoxLayout(self)
-        self.layout = QHBoxLayout()
-        self.vlayout.addLayout(self.layout)
+        self._layout = QHBoxLayout()
+        self.vlayout.addLayout(self._layout)
 
-        self.layout.addWidget(QLabel("ns:", self))
+        self._layout.addWidget(QLabel("ns:", self))
 
         self.nsComboBox = QComboBox(self)
         uries = server.get_namespace_array()
@@ -31,22 +44,21 @@ class NewNodeBaseDialog(QDialog):
         if nsidx > len(uries) - 1:
             nsidx = len(uries) - 1
         self.nsComboBox.setCurrentIndex(nsidx)
-        self.layout.addWidget(self.nsComboBox)
+        self._layout.addWidget(self.nsComboBox)
 
-        self.layout.addWidget(QLabel("Name:", self))
+        self._layout.addWidget(QLabel("Name:", self))
         self.nameLabel = QLineEdit(self)
         self.nameLabel.setMinimumWidth(120)
         self.nameLabel.setText("NoName")
-        self.layout.addWidget(self.nameLabel)
+        self._layout.addWidget(self.nameLabel)
         self.nodeidCheckBox = QCheckBox("Auto NodeId", self)
         self.nodeidCheckBox.stateChanged.connect(self._show_nodeid)
-        self.layout.addWidget(self.nodeidCheckBox)
+        self._layout.addWidget(self.nodeidCheckBox)
         self.nodeidLineEdit = QLineEdit(self)
         self.nodeidLineEdit.setMinimumWidth(80)
-        self.nodeidLineEdit.setText(self.settings.value("last_nodeid_prefix", "ns={};i=20000".format(nsidx)))
-        self.layout.addWidget(self.nodeidLineEdit)
+        self.nodeidLineEdit.setText(self.settings.value("last_nodeid_prefix", f"ns={nsidx};i=20000"))
+        self._layout.addWidget(self.nodeidLineEdit)
 
-        # restore check box state from settings
         if self.settings.value("last_node_widget_vis", False) == "true":
             self.nodeidCheckBox.setChecked(False)
             self.nodeidLineEdit.show()
@@ -54,27 +66,31 @@ class NewNodeBaseDialog(QDialog):
             self.nodeidCheckBox.setChecked(True)
             self.nodeidLineEdit.hide()
 
-        self.buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel, Qt.Orientation.Horizontal, self)
+        self.buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel,
+            Qt.Orientation.Horizontal,
+            self,
+        )
         self.vlayout.addWidget(self.buttons)
 
         self.buttons.accepted.connect(self.accept)
         self.buttons.accepted.connect(self._store_state)
         self.buttons.rejected.connect(self.reject)
 
-    def _store_state(self):
+    def _store_state(self) -> None:
         self.settings.setValue("last_namespace", self.nsComboBox.currentIndex())
         self.settings.setValue("last_node_widget_vis", not self.nodeidCheckBox.isChecked())
         ns_nt = self.nodeidLineEdit.text().split(';')
         self.settings.setValue("last_nodeid_prefix", ns_nt[0] + ';' + ns_nt[1][0:2])
 
-    def _show_nodeid(self, val):
+    def _show_nodeid(self, val: int) -> None:
         if val:
             self.nodeidLineEdit.hide()
         else:
             self.nodeidLineEdit.show()
         self.adjustSize()
 
-    def get_nodeid_and_bname(self):
+    def get_nodeid_and_bname(self) -> tuple[ua.NodeId, ua.QualifiedName]:
         ns = self.nsComboBox.currentIndex()
         name = self.nameLabel.text()
         bname = ua.QualifiedName(name, ns)
@@ -84,12 +100,19 @@ class NewNodeBaseDialog(QDialog):
             nodeid = ua.NodeId.from_string(self.nodeidLineEdit.text())
         return nodeid, bname
 
-    def get_args(self):
+    def get_args(self) -> tuple[Any, ...]:
         nodeid, bname = self.get_nodeid_and_bname()
         return nodeid, bname
 
     @classmethod
-    def getArgs(cls, parent, title, server, *args, **kwargs):
+    def getArgs(
+        cls,
+        parent: QWidget | None,
+        title: str,
+        server: SyncNode,
+        *args: Any,
+        **kwargs: Any,
+    ) -> tuple[tuple[Any, ...] | list[Any], bool]:
         dialog = cls(parent, title, server, *args, **kwargs)
         result = dialog.exec()
         if result == QDialog.DialogCode.Accepted:
@@ -99,35 +122,48 @@ class NewNodeBaseDialog(QDialog):
 
 
 class NewUaObjectDialog(NewNodeBaseDialog):
-    def __init__(self, parent, title, server, base_node_type, current_node_type=None):
+    def __init__(
+        self,
+        parent: QWidget | None,
+        title: str,
+        server: SyncNode,
+        base_node_type: SyncNode,
+        current_node_type: SyncNode | None = None,
+    ) -> None:
         NewNodeBaseDialog.__init__(self, parent, title, server)
 
         if current_node_type is None:
             current_node_type = base_node_type
 
         self.objectTypeButton = GetNodeButton(self, current_node_type, base_node_type)
-        self.layout.addWidget(self.objectTypeButton)
+        self._layout.addWidget(self.objectTypeButton)
 
-    def get_args(self):
+    def get_args(self) -> tuple[Any, ...]:
         nodeid, bname = self.get_nodeid_and_bname()
         otype = self.objectTypeButton.get_node()
         return nodeid, bname, otype
 
 
 class NewUaVariableDialog(NewNodeBaseDialog):
-    def __init__(self, parent, title, server, dtype=None):
+    def __init__(
+        self,
+        parent: QWidget | None,
+        title: str,
+        server: SyncNode,
+        dtype: str | None = None,
+    ) -> None:
         NewNodeBaseDialog.__init__(self, parent, title, server)
 
         self.valLineEdit = QLineEdit(self)
         self.valLineEdit.setMinimumWidth(100)
-        self.layout.addWidget(self.valLineEdit)
+        self._layout.addWidget(self.valLineEdit)
 
         self.dataTypeButton = GetDataTypeNodeButton(self, self.server, self.settings, dtype)
         self.dataTypeButton.value_changed.connect(self._data_type_changed)
-        self.layout.addWidget(self.dataTypeButton)
+        self._layout.addWidget(self.dataTypeButton)
         self._data_type_changed(self.dataTypeButton.get_node())
 
-    def _data_type_changed(self, node):
+    def _data_type_changed(self, node: SyncNode) -> None:
         if node.nodeid in (
                 ua.NodeId(ua.ObjectIds.Decimal),
                 ua.NodeId(ua.ObjectIds.Float),
@@ -165,12 +201,11 @@ class NewUaVariableDialog(NewNodeBaseDialog):
             self.valLineEdit.setText("Null")
             self.valLineEdit.setEnabled(True)
 
-    def get_args(self):
+    def get_args(self) -> tuple[Any, ...]:
         nodeid, bname = self.get_nodeid_and_bname()
         dtype = self.dataTypeButton.get_node()
         vtype = data_type_to_variant_type(dtype)
         if vtype == ua.VariantType.ExtensionObject:
-            # we currently cannot construct a complex object from a string
             var = ua.Variant()
         else:
             var = string_to_variant(self.valLineEdit.text(), vtype)
@@ -178,10 +213,10 @@ class NewUaVariableDialog(NewNodeBaseDialog):
 
 
 class NewUaMethodDialog(NewNodeBaseDialog):
-    def __init__(self, parent, title, server):
+    def __init__(self, parent: QWidget | None, title: str, server: SyncNode) -> None:
         NewNodeBaseDialog.__init__(self, parent, title, server)
 
-        self.widgets = []
+        self.widgets: list[list[Any]] = []
 
         self.inplayout = QVBoxLayout(self)
         self.vlayout.addLayout(self.inplayout)
@@ -191,11 +226,11 @@ class NewUaMethodDialog(NewNodeBaseDialog):
         self.vlayout.addLayout(self.ouplayout)
         self.ouplayout.addLayout(self.add_output_header())
 
-    def get_args(self):
+    def get_args(self) -> tuple[Any, ...]:
         nodeid, bname = self.get_nodeid_and_bname()
 
-        input_args = []
-        output_args = []
+        input_args: list[ua.Argument] = []
+        output_args: list[ua.Argument] = []
 
         for row in self.widgets:
             dtype = row[3].get_node()
@@ -214,10 +249,9 @@ class NewUaMethodDialog(NewNodeBaseDialog):
             else:
                 output_args.append(method_arg)
 
-        # callback is None, this cannot be set from modeler
         return nodeid, bname, None, input_args, output_args
 
-    def add_row(self, mode):
+    def add_row(self, mode: str) -> QHBoxLayout:
         rowlayout = QHBoxLayout(self)
 
         rowlayout.addWidget(QLabel("Arg Name:", self))
@@ -236,31 +270,29 @@ class NewUaMethodDialog(NewNodeBaseDialog):
         self.widgets.append([mode, argNameLabel, argDescLabel, dataTypeButton])
         return rowlayout
 
-    def _add_input_row(self):
+    def _add_input_row(self) -> None:
         self.inplayout.addLayout(self.add_row("input"))
 
-    def _add_output_row(self):
+    def _add_output_row(self) -> None:
         self.ouplayout.addLayout(self.add_row("output"))
 
-    def add_input_header(self):
+    def add_input_header(self) -> QHBoxLayout:
         header_row = QHBoxLayout(self)
         header_row.addWidget(QLabel("Input", self))
-        #header_row.addWidget(self.add_h_line())
         button = QPushButton("Add input argument")
         button.clicked.connect(self._add_input_row)
         header_row.addWidget(button)
         return header_row
 
-    def add_output_header(self):
+    def add_output_header(self) -> QHBoxLayout:
         header_row = QHBoxLayout(self)
         header_row.addWidget(QLabel("Output", self))
-        #header_row.addWidget(self.add_h_line())
         button = QPushButton("Add output argument")
         header_row.addWidget(button)
         button.clicked.connect(self._add_output_row)
         return header_row
 
-    def add_h_line(self):
+    def add_h_line(self) -> QFrame:
         line = QFrame()
         line.setFrameShape(QFrame.Shape.HLine)
         line.setFrameShadow(QFrame.Shadow.Sunken)

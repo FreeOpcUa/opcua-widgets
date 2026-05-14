@@ -20,5 +20,25 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools]
 packages = ["uawidgets"]
 
+[tool.setuptools.package-data]
+uawidgets = ["py.typed"]
+
+[dependency-groups]
+dev = ["mypy"]
+
 [tool.uv.sources]
 asyncua = { path = "../../opcua-asyncio", editable = true }
+
+[tool.mypy]
+python_version = "3.14"
+strict = true
+disallow_subclassing_any = false
+disallow_untyped_calls = false
+disallow_any_generics = false
+warn_return_any = false
+exclude = "(^|/)(resources)\\.py$"
+
+[[tool.mypy.overrides]]
+module = ["asyncua.*"]
+ignore_missing_imports = true
+follow_imports = "skip"
