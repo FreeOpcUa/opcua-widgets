@@ -1,6 +1,5 @@
-from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtWidgets import QTreeView, QDialog, QHBoxLayout, QVBoxLayout, QDialogButtonBox, QAbstractItemView, QPushButton, QLineEdit, QWidget
-from PyQt5.QtCore import Qt
+from PyQt6.QtCore import pyqtSignal, Qt
+from PyQt6.QtWidgets import QTreeView, QDialog, QHBoxLayout, QVBoxLayout, QDialogButtonBox, QAbstractItemView, QPushButton, QLineEdit, QWidget
 
 from asyncua import ua
 from asyncua.sync import new_node, SyncNode
@@ -86,14 +85,14 @@ class GetNodeDialog(QDialog):
         layout = QVBoxLayout(self)
 
         self.treeview = QTreeView(self)
-        self.treeview.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.treeview.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.tree = TreeWidget(self.treeview)
         self.tree.set_root_node(startnode)
         layout.addWidget(self.treeview)
 
         self.buttons = QDialogButtonBox(
-            QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
-            Qt.Horizontal, self)
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel,
+            Qt.Orientation.Horizontal, self)
         layout.addWidget(self.buttons)
         self.resize(800, 600)
 
@@ -110,9 +109,9 @@ class GetNodeDialog(QDialog):
     @staticmethod
     def getNode(parent, startnode, currentnode=None):
         dialog = GetNodeDialog(parent, startnode, currentnode)
-        result = dialog.exec_()
+        result = dialog.exec()
         node = dialog.get_node()
-        return node, result == QDialog.Accepted
+        return node, result == QDialog.DialogCode.Accepted
 
 
 class GetDataTypeNodeButton(GetNodeButton):

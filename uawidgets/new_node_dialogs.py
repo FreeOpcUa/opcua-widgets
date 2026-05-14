@@ -1,7 +1,7 @@
 import uuid
 
-from PyQt5.QtCore import QSettings, Qt
-from PyQt5.QtWidgets import QPushButton, QComboBox, QLabel, QLineEdit, QHBoxLayout, QDialog, QDialogButtonBox, QVBoxLayout, QCheckBox, QFrame
+from PyQt6.QtCore import QSettings, Qt
+from PyQt6.QtWidgets import QPushButton, QComboBox, QLabel, QLineEdit, QHBoxLayout, QDialog, QDialogButtonBox, QVBoxLayout, QCheckBox, QFrame
 
 from asyncua import ua
 from asyncua.common.ua_utils import string_to_variant
@@ -54,7 +54,7 @@ class NewNodeBaseDialog(QDialog):
             self.nodeidCheckBox.setChecked(True)
             self.nodeidLineEdit.hide()
 
-        self.buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, Qt.Horizontal, self)
+        self.buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel, Qt.Orientation.Horizontal, self)
         self.vlayout.addWidget(self.buttons)
 
         self.buttons.accepted.connect(self.accept)
@@ -91,8 +91,8 @@ class NewNodeBaseDialog(QDialog):
     @classmethod
     def getArgs(cls, parent, title, server, *args, **kwargs):
         dialog = cls(parent, title, server, *args, **kwargs)
-        result = dialog.exec_()
-        if result == QDialog.Accepted:
+        result = dialog.exec()
+        if result == QDialog.DialogCode.Accepted:
             return dialog.get_args(), True
         else:
             return [], False
@@ -262,6 +262,6 @@ class NewUaMethodDialog(NewNodeBaseDialog):
 
     def add_h_line(self):
         line = QFrame()
-        line.setFrameShape(QFrame.HLine)
-        line.setFrameShadow(QFrame.Sunken)
+        line.setFrameShape(QFrame.Shape.HLine)
+        line.setFrameShadow(QFrame.Shadow.Sunken)
         return line

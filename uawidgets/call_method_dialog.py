@@ -1,6 +1,6 @@
 import logging
 
-from PyQt5.QtWidgets import QPushButton, QLabel, QLineEdit, QHBoxLayout, QDialog, QVBoxLayout
+from PyQt6.QtWidgets import QPushButton, QLabel, QLineEdit, QHBoxLayout, QDialog, QVBoxLayout
 
 from asyncua.common.ua_utils import val_to_string, string_to_variant, data_type_to_string
 from asyncua.sync import call_method_full, data_type_to_variant_type
@@ -28,9 +28,8 @@ class CallMethodDialog(QDialog):
             args = inputs.read_value()
             for arg in args:
                 self._add_input(arg)
-        except ua.UaError as ex:
+        except ua.UaError:
             logger.exception("Error reading input arguments")
-            print(ex)
 
         layout = QHBoxLayout()
         self.vlayout.addLayout(layout)
@@ -44,9 +43,8 @@ class CallMethodDialog(QDialog):
             args = outputs.read_value()
             for arg in args:
                 self._add_output(arg)
-        except ua.UaError as ex:
-            logger.exception("Error reading ouput arguments")
-            print(ex)
+        except ua.UaError:
+            logger.exception("Error reading output arguments")
 
         layout = QHBoxLayout()
         self.vlayout.addLayout(layout)

@@ -1,9 +1,14 @@
-from PyQt5.QtCore import pyqtSignal, QMimeData, QObject, Qt, QSettings
-from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon
-from PyQt5.QtWidgets import QApplication, QAbstractItemView, QAction
+import logging
+
+from PyQt6.QtCore import pyqtSignal, QMimeData, QObject, Qt, QSettings
+from PyQt6.QtGui import QStandardItemModel, QStandardItem, QIcon, QAction
+from PyQt6.QtWidgets import QApplication, QAbstractItemView, QHeaderView
 
 from asyncua import ua
 from asyncua.sync import new_node
+
+
+logger = logging.getLogger(__name__)
 
 
 class TreeWidget(QObject):
@@ -19,9 +24,9 @@ class TreeWidget(QObject):
         self.view.setModel(self.model)
 
         self.model.setHorizontalHeaderLabels(['DisplayName', "BrowseName", 'NodeId'])
-        self.view.header().setSectionResizeMode(0)
+        self.view.header().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
         self.view.header().setStretchLastSection(True)
-        self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.view.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.settings = QSettings()
         state = self.settings.value("tree_widget_state", None)
         if state is not None:
@@ -55,26 +60,26 @@ class TreeWidget(QObject):
         Expand tree until given node and select it
         """
         if isinstance(node, str):
-            idxlist = self.model.match(self.model.index(0, 0), Qt.DisplayRole, node, 1, Qt.MatchExactly|Qt.MatchRecursive)
+            idxlist = self.model.match(self.model.index(0, 0), Qt.ItemDataRole.DisplayRole, node, 1, Qt.MatchFlag.MatchExactly | Qt.MatchFlag.MatchRecursive)
             if not idxlist:
                 raise ValueError(f"Node {node} not found in tree")
-            node = self.model.data(idxlist[0], Qt.UserRole)
+            node = self.model.data(idxlist[0], Qt.ItemDataRole.UserRole)
         path = node.get_path()
         for node in path:
             # FIXME: this would be the correct way if it would work
-            # idxlist = self.model.match(self.model.index(0, 0), Qt.UserRole, node.node, 2, Qt.MatchExactly|Qt.MatchRecursive)
+            # idxlist = self.model.match(self.model.index(0, 0), Qt.ItemDataRole.UserRole, node.node, 2, Qt.MatchExactly|Qt.MatchRecursive)
             try:
                 text = node.read_display_name().Text
             except ua.UaError:
                 return
-            idxlist = self.model.match(self.model.index(0, 0), Qt.DisplayRole, text, 1, Qt.MatchExactly|Qt.MatchRecursive)
+            idxlist = self.model.match(self.model.index(0, 0), Qt.ItemDataRole.DisplayRole, text, 1, Qt.MatchFlag.MatchExactly | Qt.MatchFlag.MatchRecursive)
             if idxlist:
                 idx = idxlist[0]
                 self.view.setExpanded(idx, True)
                 self.view.setCurrentIndex(idx)
                 self.view.activated.emit(idx)
             else:
-                print(f"While expanding tree, Could not find node {node} in tree view, this might be OK")
+                logger.warning("While expanding tree, could not find node %s in tree view, this might be OK", node)
 
     def copy_nodeid(self):
         node = self.get_current_node()
@@ -86,8 +91,8 @@ class TreeWidget(QObject):
         idx = idx.sibling(idx.row(), 0)
         it = self.model.itemFromIndex(idx)
         path = []
-        while it and it.data(Qt.UserRole):
-            node = it.data(Qt.UserRole)
+        while it and it.data(Qt.ItemDataRole.UserRole):
+            node = it.data(Qt.ItemDataRole.UserRole)
             name = node.read_browse_name().to_string()
             path.insert(0, name)
             it = it.parent()
@@ -118,11 +123,11 @@ class TreeWidget(QObject):
             item = self.model.item(0, 0)
         for _ in range(item.rowCount()):
             child_it = item.child(0, 0)
-            node = child_it.data(Qt.UserRole)
+            node = child_it.data(Qt.ItemDataRole.UserRole)
             if node:
                 self.model.reset_cache(node)
             item.takeRow(0)
-        node = item.data(Qt.UserRole)
+        node = item.data(Qt.ItemDataRole.UserRole)
         if node:
             self.model.reset_cache(node)
             idx = self.model.indexFromItem(item)
@@ -140,7 +145,7 @@ class TreeWidget(QObject):
         it = self.model.itemFromIndex(idx)
         if not it:
             return None
-        node = it.data(Qt.UserRole)
+        node = it.data(Qt.ItemDataRole.UserRole)
         if not node:
             ex = RuntimeError("Item does not contain node data, report!")
             self.error.emit(ex)
@@ -204,10 +209,10 @@ class TreeViewModel(QStandardItemModel):
         elif desc.NodeClass == ua.NodeClass.ReferenceType:
             item[0].setIcon(QIcon(":/reference_type.svg"))
         if node:
-            item[0].setData(node, Qt.UserRole)
+            item[0].setData(node, Qt.ItemDataRole.UserRole)
         else:
-            parent_node = parent.data(Qt.UserRole)
-            item[0].setData(new_node(parent_node, desc.NodeId), Qt.UserRole)
+            parent_node = parent.data(Qt.ItemDataRole.UserRole)
+            item[0].setData(new_node(parent_node, desc.NodeId), Qt.ItemDataRole.UserRole)
         if parent:
             return parent.appendRow(item)
         else:
@@ -221,7 +226,7 @@ class TreeViewModel(QStandardItemModel):
         item = self.itemFromIndex(idx)
         if not item:
             return False
-        node = item.data(Qt.UserRole)
+        node = item.data(Qt.ItemDataRole.UserRole)
         if node not in self._fetched:
             self._fetched.append(node)
             return True
@@ -231,7 +236,7 @@ class TreeViewModel(QStandardItemModel):
         item = self.itemFromIndex(idx)
         if not item:
             return True
-        node = item.data(Qt.UserRole)
+        node = item.data(Qt.ItemDataRole.UserRole)
         if node in self._fetched:
             return QStandardItemModel.hasChildren(self, idx)
         return True
@@ -243,7 +248,7 @@ class TreeViewModel(QStandardItemModel):
 
     def _fetchMore(self, parent):
         try:
-            node = parent.data(Qt.UserRole)
+            node = parent.data(Qt.ItemDataRole.UserRole)
             descs = node.get_children_descriptions()
             descs.sort(key=lambda x: x.BrowseName)
             added = []
@@ -261,7 +266,7 @@ class TreeViewModel(QStandardItemModel):
         for idx in idxs:
             item = self.itemFromIndex(idx)
             if item:
-                node = item.data(Qt.UserRole)
+                node = item.data(Qt.ItemDataRole.UserRole)
                 if node:
                     nodes.append(node.nodeid.to_string())
         mdata.setText(", ".join(nodes))

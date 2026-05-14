@@ -26,7 +26,7 @@ def trycatchslot(func):
             elif hasattr(self, "error"):
                 self.error.emit(ex)
             else:
-                logger.warning("Error class % has no member show_error or error", self)
+                logger.warning("Error class %s has no member show_error or error", self)
         return result
     return wrapper
 

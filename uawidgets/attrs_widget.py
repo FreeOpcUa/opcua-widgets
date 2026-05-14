@@ -3,9 +3,9 @@ import functools
 from enum import Enum
 from dataclasses import fields
 
-from PyQt5.QtCore import pyqtSignal, Qt, QObject, QSettings
-from PyQt5.QtGui import QStandardItemModel, QStandardItem
-from PyQt5.QtWidgets import QApplication, QMenu, QAction, QStyledItemDelegate, QComboBox, QVBoxLayout, QCheckBox, QDialog, QAbstractItemView
+from PyQt6.QtCore import pyqtSignal, Qt, QObject, QSettings
+from PyQt6.QtGui import QStandardItemModel, QStandardItem, QAction
+from PyQt6.QtWidgets import QApplication, QMenu, QStyledItemDelegate, QComboBox, QVBoxLayout, QCheckBox, QDialog, QAbstractItemView, QHeaderView
 
 from asyncua import ua
 from asyncua.sync import new_node
@@ -110,14 +110,14 @@ class AttrsWidget(QObject):
             self.view.header().restoreState(state)
         self.view.setModel(self.model)
         self.current_node = None
-        self.view.header().setSectionResizeMode(0)
+        self.view.header().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
         self.view.header().setStretchLastSection(True)
         self.view.expanded.connect(self._item_expanded)
         self.view.collapsed.connect(self._item_collapsed)
-        self.view.setEditTriggers(QAbstractItemView.DoubleClicked)
+        self.view.setEditTriggers(QAbstractItemView.EditTrigger.DoubleClicked)
 
         # Context menu
-        self.view.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.view.customContextMenuRequested.connect(self.showContextMenu)
         copyaction = QAction("&Copy Value", self.model)
         copyaction.triggered.connect(self._copy_value)
@@ -137,13 +137,13 @@ class AttrsWidget(QObject):
 
     def _item_collapsed(self, idx):
         it = self.model.itemFromIndex(idx.sibling(0, 1))
-        data = it.data(Qt.UserRole)
+        data = it.data(Qt.ItemDataRole.UserRole)
         it.setText(val_to_string(data.value))
 
     def showContextMenu(self, position):
         item = self.get_current_item()
         if item:
-            self._contextMenu.exec_(self.view.viewport().mapToGlobal(position))
+            self._contextMenu.exec(self.view.viewport().mapToGlobal(position))
 
     def get_current_item(self, col_idx=0):
         idx = self.view.currentIndex()
@@ -198,14 +198,14 @@ class AttrsWidget(QObject):
             string = val_to_string(dv.Value.Value)
         name_item = QStandardItem(attr.name)
         vitem = QStandardItem(string)
-        vitem.setData(AttributeData(attr, dv.Value.Value, dv.Value.VariantType), Qt.UserRole)
+        vitem.setData(AttributeData(attr, dv.Value.Value, dv.Value.VariantType), Qt.ItemDataRole.UserRole)
         self.model.appendRow([name_item, vitem, QStandardItem(dv.Value.VariantType.name)])
 
     def _show_value_attr(self, attr, dv):
         name_item = QStandardItem("Value")
         vitem = QStandardItem()
         items = self._show_val(name_item, None, "Value", dv.Value.Value, dv.Value.VariantType)
-        items[1].setData(AttributeData(attr, dv.Value.Value, dv.Value.VariantType), Qt.UserRole)
+        items[1].setData(AttributeData(attr, dv.Value.Value, dv.Value.VariantType), Qt.ItemDataRole.UserRole)
         row = [name_item, vitem, QStandardItem(dv.Value.VariantType.name)]
         self.model.appendRow(row)
         self._show_timestamps(name_item, dv)
@@ -214,14 +214,14 @@ class AttrsWidget(QObject):
         if dv.Value.Value is None:
             return
         items = self._show_val(self.model, None, "DataTypeDefinition", dv.Value.Value, dv.Value.VariantType)
-        items[1].setData(AttributeData(attr, dv.Value.Value, dv.Value.VariantType), Qt.UserRole)
+        items[1].setData(AttributeData(attr, dv.Value.Value, dv.Value.VariantType), Qt.ItemDataRole.UserRole)
 
     @robust
     def _show_val(self, parent, obj, name, val, vtype):
         name_item = QStandardItem(name)
         vitem = QStandardItem()
         vitem.setText(val_to_string(val))
-        vitem.setData(MemberData(obj, name, val, vtype), Qt.UserRole)
+        vitem.setData(MemberData(obj, name, val, vtype), Qt.ItemDataRole.UserRole)
         row = [name_item, vitem, QStandardItem(str(vtype))]
         # if we have a list or extension object we display children
         if isinstance(val, list):
@@ -238,7 +238,7 @@ class AttrsWidget(QObject):
             name_item = QStandardItem(str(idx))
             vitem = QStandardItem()
             vitem.setText(val_to_string(val))
-            vitem.setData(ListData(mylist, idx, val, vtype), Qt.UserRole)
+            vitem.setData(ListData(mylist, idx, val, vtype), Qt.ItemDataRole.UserRole)
             vtypename = vtype.name if isinstance(vtype, Enum) else str(vtype)
             row = [name_item, vitem, QStandardItem(vtypename)]
             parent.appendRow(row)
@@ -300,7 +300,7 @@ class MyDelegate(QStyledItemDelegate):
         if idx.column() != 1:
             return None
         item = self.attrs_widget.model.itemFromIndex(idx)
-        data = item.data(Qt.UserRole)
+        data = item.data(Qt.ItemDataRole.UserRole)
         if not data.is_editable():
             return None
         text = item.text()
@@ -344,7 +344,7 @@ class MyDelegate(QStyledItemDelegate):
     @trycatchslot
     def setModelData(self, editor, model, idx):
         # if user is setting a value on a null variant, try using the nodes datatype instead
-        data = model.data(idx, Qt.UserRole)
+        data = model.data(idx, Qt.ItemDataRole.UserRole)
 
         if isinstance(data, AttributeData):
             self._write_attribute_data(data, editor, model, idx)
@@ -358,14 +358,14 @@ class MyDelegate(QStyledItemDelegate):
     def _set_list_data(self, data, editor, model, idx):
         text = editor.text()
         data.mylist[data.idx] = string_to_val(text, data.uatype)
-        model.setItemData(idx, {Qt.DisplayRole: text, Qt.UserRole: data})
+        model.setItemData(idx, {Qt.ItemDataRole.DisplayRole: text, Qt.ItemDataRole.UserRole: data})
         attr_data = self._get_attr_data(idx, model)
         self._write_attr(attr_data)
 
     def _set_member_data(self, data, editor, model, idx):
         val = string_to_val(editor.text(), data.uatype)
         data.value = val
-        model.setItemData(idx, {Qt.DisplayRole: editor.text(), Qt.UserRole: data})
+        model.setItemData(idx, {Qt.ItemDataRole.DisplayRole: editor.text(), Qt.ItemDataRole.UserRole: data})
         setattr(data.obj, data.name, val)
         attr_data = self._get_attr_data(idx, model)
         self._write_attr(attr_data)
@@ -374,14 +374,14 @@ class MyDelegate(QStyledItemDelegate):
         while True:
             idx = idx.parent()
             it = model.itemFromIndex(idx.sibling(0, 1))
-            data = it.data(Qt.UserRole)
+            data = it.data(Qt.ItemDataRole.UserRole)
             if isinstance(data, AttributeData):
                 return data
 
     def _get_parent_data(self, idx, model):
         parent_idx = idx.parent()
         it = model.itemFromIndex(parent_idx.sibling(0, 1))
-        return parent_idx, it.data(Qt.UserRole)
+        return parent_idx, it.data(Qt.ItemDataRole.UserRole)
 
     def _write_attribute_data(self, data, editor, model, idx):
         if data.attr is ua.AttributeIds.Value:
@@ -416,7 +416,7 @@ class MyDelegate(QStyledItemDelegate):
             else:
                 text = editor.text()
             data.value = string_to_val(text, data.uatype)
-        model.setItemData(idx, {Qt.DisplayRole: text, Qt.UserRole: data})
+        model.setItemData(idx, {Qt.ItemDataRole.DisplayRole: text, Qt.ItemDataRole.UserRole: data})
         self._write_attr(data)
         if isinstance(data.value, list):
             # we need to refresh children

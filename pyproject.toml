@@ -1,12 +1,13 @@
 [project]
 name = "opcua-widgets"
-version = "0.6.1"
+version = "0.7.0"
 description = "OPC-UA Widgets"
 authors = [{ name = "Olivier R-D et al." }]
 license = { text = "GNU General Public License" }
-requires-python = ">=3.9"
+requires-python = ">=3.14"
 dependencies = [
-    "asyncua",
+    "asyncua>=1.2b2",
+    "PyQt6",
 ]
 
 [project.urls]
@@ -18,3 +19,6 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 packages = ["uawidgets"]
+
+[tool.uv.sources]
+asyncua = { path = "../../opcua-asyncio", editable = true }

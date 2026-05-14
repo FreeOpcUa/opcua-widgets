@@ -1,8 +1,8 @@
 import logging
 
-from PyQt5.QtCore import pyqtSignal, QObject, QSettings, Qt
-from PyQt5.QtGui import QStandardItemModel, QStandardItem
-from PyQt5.QtWidgets import QMenu, QAction, QStyledItemDelegate, QAbstractItemView
+from PyQt6.QtCore import pyqtSignal, QObject, QSettings, Qt
+from PyQt6.QtGui import QStandardItemModel, QStandardItem, QAction
+from PyQt6.QtWidgets import QMenu, QStyledItemDelegate, QAbstractItemView, QHeaderView
 
 from asyncua import ua
 from asyncua.sync import SyncNode, new_node
@@ -27,7 +27,7 @@ class RefsWidget(QObject):
         delegate = MyDelegate(self.view, self)
         delegate.error.connect(self.error.emit)
         delegate.reference_changed.connect(self.reference_changed.emit)
-        self.view.setEditTriggers(QAbstractItemView.DoubleClicked)
+        self.view.setEditTriggers(QAbstractItemView.EditTrigger.DoubleClicked)
         self.view.setModel(self.model)
         self.view.setItemDelegate(delegate)
         self.settings = QSettings()
@@ -35,7 +35,7 @@ class RefsWidget(QObject):
         state = self.settings.value("WindowState/refs_widget_state", None)
         if state is not None:
             self.view.horizontalHeader().restoreState(state)
-        self.view.horizontalHeader().setSectionResizeMode(0)
+        self.view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
         self.view.horizontalHeader().setStretchLastSection(True)
         self.node = None
 
@@ -46,7 +46,7 @@ class RefsWidget(QObject):
         self.removeRefAction = QAction("Remove Reference", self.model)
         self.removeRefAction.triggered.connect(self.remove_ref)
 
-        self.view.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.view.customContextMenuRequested.connect(self.showContextMenu)
         self._contextMenu = QMenu()
         self._contextMenu.addAction(self.reloadAction)
@@ -61,7 +61,7 @@ class RefsWidget(QObject):
         idx = self.view.currentIndex()
         if idx.isValid():
             self.removeRefAction.setEnabled(True)
-        self._contextMenu.exec_(self.view.viewport().mapToGlobal(position))
+        self._contextMenu.exec(self.view.viewport().mapToGlobal(position))
 
     def clear(self):
         # remove all rows but not header!!
@@ -95,7 +95,7 @@ class RefsWidget(QObject):
             logger.warning("No valid reference selected to remove")
         idx = idx.sibling(idx.row(), 0)
         item = self.model.itemFromIndex(idx)
-        ref = item.data(Qt.UserRole)
+        ref = item.data(Qt.ItemDataRole.UserRole)
         self.do_remove_ref(ref)
         self.reload()
 
@@ -144,7 +144,7 @@ class RefsWidget(QObject):
         else:
             typedef = ref.TypeDefinition.to_string()
         titem = QStandardItem(typename)
-        titem.setData(ref, Qt.UserRole)
+        titem.setData(ref, Qt.ItemDataRole.UserRole)
         self.model.appendRow([
             titem,
             QStandardItem(nodeid),
@@ -168,7 +168,7 @@ class MyDelegate(QStyledItemDelegate):
             return None
         data_idx = idx.sibling(idx.row(), 0)
         item = self._widget.model.itemFromIndex(data_idx)
-        ref = item.data(Qt.UserRole)
+        ref = item.data(Qt.ItemDataRole.UserRole)
         if idx.column() == 1:
             node = new_node(self._widget.node, ref.NodeId)
             startnode = new_node(self._widget.node, ua.ObjectIds.RootFolder)
@@ -183,16 +183,16 @@ class MyDelegate(QStyledItemDelegate):
     @trycatchslot
     def setModelData(self, editor, model, idx):
         data_idx = idx.sibling(idx.row(), 0)
-        ref = model.data(data_idx, Qt.UserRole)
+        ref = model.data(data_idx, Qt.ItemDataRole.UserRole)
         self._widget.do_remove_ref(ref, check=False)
         if idx.column() == 0:
             ref.ReferenceTypeId = editor.get_node().nodeid
-            model.setData(idx, ref.ReferenceTypeId.to_string(), Qt.DisplayRole)
+            model.setData(idx, ref.ReferenceTypeId.to_string(), Qt.ItemDataRole.DisplayRole)
         elif idx.column() == 1:
             ref.NodeId = editor.get_node().nodeid
             ref.NodeClass = editor.get_node().get_node_class()
-            model.setData(idx, ref.NodeId.to_string(), Qt.DisplayRole)
-        model.setData(data_idx, ref, Qt.UserRole)
+            model.setData(idx, ref.NodeId.to_string(), Qt.ItemDataRole.DisplayRole)
+        model.setData(data_idx, ref, Qt.ItemDataRole.UserRole)
         if ref.NodeId.is_null() or ref.ReferenceTypeId.is_null():
             logger.info("Do not save yet. Need NodeId and ReferenceTypeId to be set")
             return

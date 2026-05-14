@@ -2,9 +2,10 @@
 import unittest
 import sys
 
-from asyncua import ua, Server
-from PyQt5 import Qt
-from PyQt5.QtWidgets import QApplication, QTreeView, QAbstractItemDelegate, QTableView
+from asyncua import ua
+from asyncua.sync import Server
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QApplication, QTreeView, QAbstractItemDelegate, QTableView
 
 from uawidgets.attrs_widget import AttrsWidget
 from uawidgets.refs_widget import RefsWidget
@@ -36,7 +37,7 @@ class TestAttrsWidget(unittest.TestCase):
         self.server.stop()
 
     def find_item(self, text):
-        idxlist = self.widget.model.match(self.widget.model.index(0, 0), Qt.DisplayRole, text,  1, Qt.MatchExactly | Qt.MatchRecursive)
+        idxlist = self.widget.model.match(self.widget.model.index(0, 0), Qt.ItemDataRole.DisplayRole, text,  1, Qt.MatchFlag.MatchExactly | Qt.MatchFlag.MatchRecursive)
         idx = idxlist[0]
         return idx
 
@@ -44,7 +45,7 @@ class TestAttrsWidget(unittest.TestCase):
         """
         modify the current item and set its displayed value to 'val'
         """
-        idxlist = self.widget.model.match(self.widget.model.index(0, 0), Qt.DisplayRole, text, match_to_use + 1, Qt.MatchExactly | Qt.MatchRecursive)
+        idxlist = self.widget.model.match(self.widget.model.index(0, 0), Qt.ItemDataRole.DisplayRole, text, match_to_use + 1, Qt.MatchFlag.MatchExactly | Qt.MatchFlag.MatchRecursive)
         if not idxlist:
             raise RuntimeError("Item with text '{}' not found".format(text))
         idx = idxlist[match_to_use]
@@ -67,7 +68,7 @@ class TestAttrsWidget(unittest.TestCase):
         else:
             editor.setText(val)
         self.widget.view.commitData(editor)
-        self.widget.view.closeEditor(editor, QAbstractItemDelegate.NoHint)
+        self.widget.view.closeEditor(editor, QAbstractItemDelegate.EndEditHint.NoHint)
         self.widget.view.reset()
 
     def modify_value(self, val):
