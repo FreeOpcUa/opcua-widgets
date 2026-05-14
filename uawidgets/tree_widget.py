@@ -1,7 +1,7 @@
 import logging
 from typing import Iterable
 
-from PyQt6.QtCore import pyqtSignal, QMimeData, QModelIndex, QObject, Qt, QSettings
+from PyQt6.QtCore import pyqtSignal, QMimeData, QModelIndex, QObject, QSize, Qt, QSettings
 from PyQt6.QtGui import QStandardItemModel, QStandardItem, QIcon, QAction
 from PyQt6.QtWidgets import QApplication, QAbstractItemView, QHeaderView, QTreeView
 
@@ -10,6 +10,10 @@ from asyncua.sync import SyncNode, new_node
 
 
 logger = logging.getLogger(__name__)
+
+# Bumped to invalidate any pre-PyQt6 header state that may have left
+# columns at zero width / hidden after the Qt 5 -> 6 migration.
+_HEADER_STATE_KEY = "tree_widget_state_v2"
 
 
 class TreeWidget(QObject):
@@ -20,18 +24,21 @@ class TreeWidget(QObject):
         QObject.__init__(self, view)
         self.view = view
         self.model = TreeViewModel()
-        self.model.clear()  # FIXME: do we need this?
         self.model.error.connect(self.error)
         self.view.setModel(self.model)
 
         self.model.setHorizontalHeaderLabels(['DisplayName', "BrowseName", 'NodeId'])
+        # Clamp icon rendering size; the bundled SVGs lack viewBox attributes
+        # and Qt6's SVG painter logs "buffer size too big" when asked to
+        # render them at unbounded sizes.
+        self.view.setIconSize(QSize(16, 16))
         header = self.view.header()
         assert header is not None
         header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
         header.setStretchLastSection(True)
         self.view.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.settings = QSettings()
-        state = self.settings.value("tree_widget_state", None)
+        state = self.settings.value(_HEADER_STATE_KEY, None)
         if state is not None:
             header.restoreState(state)
 
@@ -41,7 +48,7 @@ class TreeWidget(QObject):
     def save_state(self) -> None:
         header = self.view.header()
         if header is not None:
-            self.settings.setValue("tree_widget_state", header.saveState())
+            self.settings.setValue(_HEADER_STATE_KEY, header.saveState())
 
     def clear(self) -> None:
         self.model.clear()

@@ -125,7 +125,7 @@ class AttrsWidget(QObject):
         self.model.setHorizontalHeaderLabels(['Attribute', 'Value', 'DataType'])
         header = self.view.header()
         assert header is not None
-        state = self.settings.value("WindowState/attrs_widget_state", None)
+        state = self.settings.value("WindowState/attrs_widget_state_v2", None)
         if state is not None:
             header.restoreState(state)
         self.view.setModel(self.model)
@@ -146,7 +146,7 @@ class AttrsWidget(QObject):
     def save_state(self) -> None:
         header = self.view.header()
         if header is not None:
-            self.settings.setValue("WindowState/attrs_widget_state", header.saveState())
+            self.settings.setValue("WindowState/attrs_widget_state_v2", header.saveState())
 
     def set_read_only(self, read_only: bool) -> None:
         triggers = (

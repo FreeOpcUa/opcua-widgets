@@ -50,7 +50,7 @@ class RefsWidget(QObject):
         self.model.setHorizontalHeaderLabels(['ReferenceType', 'NodeId', "BrowseName", "TypeDefinition"])
         header = self.view.horizontalHeader()
         assert header is not None
-        state = self.settings.value("WindowState/refs_widget_state", None)
+        state = self.settings.value("WindowState/refs_widget_state_v2", None)
         if state is not None:
             header.restoreState(state)
         header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
@@ -137,7 +137,7 @@ class RefsWidget(QObject):
     def save_state(self) -> None:
         header = self.view.horizontalHeader()
         if header is not None:
-            self.settings.setValue("WindowState/refs_widget_state", header.saveState())
+            self.settings.setValue("WindowState/refs_widget_state_v2", header.saveState())
 
     def set_read_only(self, read_only: bool) -> None:
         triggers = (
