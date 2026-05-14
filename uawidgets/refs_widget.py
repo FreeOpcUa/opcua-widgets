@@ -139,6 +139,16 @@ class RefsWidget(QObject):
         if header is not None:
             self.settings.setValue("WindowState/refs_widget_state", header.saveState())
 
+    def set_read_only(self, read_only: bool) -> None:
+        triggers = (
+            QAbstractItemView.EditTrigger.NoEditTriggers
+            if read_only
+            else QAbstractItemView.EditTrigger.DoubleClicked
+        )
+        self.view.setEditTriggers(triggers)
+        self.addRefAction.setEnabled(not read_only)
+        self.removeRefAction.setEnabled(not read_only)
+
     def show_refs(self, node: SyncNode) -> None:
         self.clear()
         self.node = node

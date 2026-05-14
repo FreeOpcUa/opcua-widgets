@@ -148,6 +148,14 @@ class AttrsWidget(QObject):
         if header is not None:
             self.settings.setValue("WindowState/attrs_widget_state", header.saveState())
 
+    def set_read_only(self, read_only: bool) -> None:
+        triggers = (
+            QAbstractItemView.EditTrigger.NoEditTriggers
+            if read_only
+            else QAbstractItemView.EditTrigger.DoubleClicked
+        )
+        self.view.setEditTriggers(triggers)
+
     def _item_expanded(self, idx: QModelIndex) -> None:
         if not idx.parent().isValid():
             return
